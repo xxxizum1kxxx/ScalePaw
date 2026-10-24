@@ -28,7 +28,7 @@ ScalePaw follows the Yoin design language (see Yoin's `docs/design.md`) and Pili
 
 - Several scales can be saved; exactly one is active. The Bluetooth page lists them with a radio each; the active one expands to its capabilities, connection profile and "forget". Pairing a nearby scale saves it and makes it active.
 - The app-bar Bluetooth button always opens the Bluetooth page; it only tints when a scale is active and never connects.
-- The main shell offers two actions: **Start** opens the weigh-in page, **+** opens the manual entry form. Start goes to the Bluetooth page while no scale is active.
+- The main shell offers two actions: **Start** opens the weigh-in page, **+** opens the manual entry form. Start goes to the Bluetooth page while no scale is active, and is greyed out and searches again while the active scale cannot be found. The two sit centred over the navigation bar as one bar of connected blocks (PiliPaw's mini player): 56dp tall, 3dp apart, outer ends fully round and inner corners 6dp.
 - The scale is connected only while the weigh-in page is open. Its status card morphs shape and colour through connecting, step on, measuring (live weight when the driver reports it), reading received and error.
 - Readings are held until confirmed: each shows its profile (tap to reassign) and values; Save stores them, Weigh again discards them. Leaving the page disconnects and drops anything unsaved.
 - When a driver needs the user (choose a scale user slot, enter a consent code), the weigh-in page asks in a dialog; the driver waits.

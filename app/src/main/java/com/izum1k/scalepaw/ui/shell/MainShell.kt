@@ -1,7 +1,6 @@
 package com.izum1k.scalepaw.ui.shell
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -28,7 +27,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -46,17 +44,12 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import com.izum1k.scalepaw.ui.component.ScaleFab
 import com.izum1k.scalepaw.R
-import com.izum1k.scalepaw.ble.ScalePresence
 import com.izum1k.scalepaw.container
 import com.izum1k.scalepaw.data.model.User
 import com.izum1k.scalepaw.feature.chart.ChartScreen
@@ -70,7 +63,6 @@ import com.izum1k.scalepaw.ui.component.LocalBottomBarInset
 import com.izum1k.scalepaw.ui.component.ScaleSymbols
 import com.izum1k.scalepaw.ui.component.SheetAction
 import com.izum1k.scalepaw.ui.component.UserBadge
-import com.izum1k.scalepaw.ui.component.readingWidth
 import com.izum1k.scalepaw.ui.navigation.LocalNavigator
 import com.izum1k.scalepaw.ui.navigation.Route
 import com.izum1k.scalepaw.ui.theme.YoinMotion
@@ -92,10 +84,7 @@ fun MainShell() {
 @Composable
 private fun Tabs() {
     var tab by rememberSaveable { mutableStateOf(0) }
-    val nav = LocalNavigator.current
     val container = LocalContext.current.container
-    val session by container.session.state.collectAsState()
-    val hasScale = session.settings.scale.active != null
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(container, lifecycle) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) { container.scales.watchPresence() }
@@ -111,7 +100,7 @@ private fun Tabs() {
     val scaleInSpec = YoinMotion.defaultSpatialSpec<Float>()
     val fadeOutSpec = YoinMotion.fastEffectsSpec<Float>()
     Box(Modifier.fillMaxSize()) {
-        CompositionLocalProvider(LocalBottomBarInset provides FloatingBarInset + 72.dp) {
+        CompositionLocalProvider(LocalBottomBarInset provides FloatingBarInset + WeighBarInset + 8.dp) {
             AnimatedContent(
                 targetState = tab,
                 transitionSpec = {
@@ -128,54 +117,8 @@ private fun Tabs() {
                 }
             }
         }
-        Column(Modifier.align(Alignment.BottomCenter), horizontalAlignment = Alignment.End) {
-            Row(
-                modifier = Modifier
-                    .readingWidth(1200.dp)
-                    .fillMaxWidth()
-                    .padding(end = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val haptics = LocalHapticFeedback.current
-                val addLabel = stringResource(R.string.action_add_measurement)
-                SmallFloatingActionButton(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
-                        nav.push(Route.MeasurementEdit())
-                    },
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier.semantics { contentDescription = addLabel },
-                ) {
-                    Icon(YoinSymbols.Add, contentDescription = null)
-                }
-                val presence by container.scales.presence.collectAsStateWithLifecycle()
-                val unreachable = hasScale && (presence == ScalePresence.MISSING || presence == ScalePresence.SEARCHING)
-                val fabColor by animateColorAsState(
-                    if (unreachable) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.primaryContainer,
-                    YoinMotion.defaultEffectsSpec(),
-                    label = "startFab",
-                )
-                ScaleFab(
-                    text = stringResource(
-                        when {
-                            presence == ScalePresence.SEARCHING && hasScale -> R.string.weigh_searching
-                            unreachable -> R.string.weigh_find_scale
-                            else -> R.string.weigh_start
-                        },
-                    ),
-                    icon = if (unreachable) ScaleSymbols.Bluetooth else YoinSymbols.PlayArrow,
-                    containerColor = fabColor,
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
-                        when {
-                            !hasScale -> nav.push(Route.SettingsBluetooth)
-                            unreachable -> container.scales.refreshPresence()
-                            else -> nav.push(Route.Weigh)
-                        }
-                    },
-                )
-            }
+        Column(Modifier.align(Alignment.BottomCenter), horizontalAlignment = Alignment.CenterHorizontally) {
+            WeighBar()
             FloatingNavBar(tabs = tabs, selected = tab, onSelect = { tab = it })
         }
     }
