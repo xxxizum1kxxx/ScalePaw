@@ -95,7 +95,7 @@ class ScaleScanner(context: Context, private val scope: CoroutineScope) {
         adapter?.bondedDevices.orEmpty()
             .filter { it.type == BluetoothDevice.DEVICE_TYPE_CLASSIC || it.type == BluetoothDevice.DEVICE_TYPE_DUAL }
             .mapNotNull { d ->
-                val info = ScannedDeviceInfo(d.name.orEmpty(), d.address, 0, emptyList(), null)
+                val info = ScannedDeviceInfo(DeviceSnapshot.cleanName(d.name), d.address, 0, emptyList(), null)
                 val support = ScaleFactory.supportFor(info) ?: return@mapNotNull null
                 DiscoveredScale(info, support, d)
             }

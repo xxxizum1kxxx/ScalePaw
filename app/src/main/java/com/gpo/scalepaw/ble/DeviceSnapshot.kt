@@ -15,9 +15,9 @@ object DeviceSnapshot {
     @SuppressLint("MissingPermission")
     fun from(result: ScanResult): ScannedDeviceInfo {
         val record = result.scanRecord
-        val name = record?.deviceName ?: runCatching { result.device.name }.getOrNull().orEmpty()
+        val name = record?.deviceName ?: runCatching { result.device.name }.getOrNull()
         return ScannedDeviceInfo(
-            name = name,
+            name = cleanName(name),
             address = result.device.address,
             rssi = result.rssi,
             serviceUuids = record?.serviceUuids?.map { it.uuid }.orEmpty(),
@@ -25,6 +25,9 @@ object DeviceSnapshot {
             serviceData = record?.serviceData?.mapKeys { it.key.uuid }.orEmpty(),
         )
     }
+
+    /** Some scales pad their advertised name with NULs or other control characters. */
+    fun cleanName(raw: String?): String = raw.orEmpty().substringBefore('\u0000').filterNot { it.isISOControl() }.trim()
 
     fun encode(info: ScannedDeviceInfo): String = JSONObject().apply {
         put("name", info.name)

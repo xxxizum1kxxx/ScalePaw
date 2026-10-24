@@ -122,6 +122,7 @@ dependencies {
     implementation(libs.bouncycastle)
 
     testImplementation(libs.junit)
+    testImplementation(libs.truth)
     testImplementation(libs.turbine)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.robolectric)

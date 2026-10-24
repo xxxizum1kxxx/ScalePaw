@@ -1,5 +1,10 @@
 package com.gpo.scalepaw.feature.bluetooth
 
+import com.gpo.scalepaw.ui.component.PillShape
+import com.gpo.scalepaw.ui.theme.YoinMotion
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.animation.animateColorAsState
 import android.bluetooth.BluetoothAdapter
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -20,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
@@ -104,7 +108,7 @@ fun BluetoothScreen() {
                 Section(title = stringResource(R.string.ble_saved_scale)) {
                     SettingRow(
                         title = saved.name ?: saved.address.orEmpty(),
-                        value = listOfNotNull(support?.displayName ?: stringResource(R.string.ble_unsupported), saved.address).joinToString(" · "),
+                        value = listOfNotNull(support?.displayName ?: stringResource(R.string.ble_unsupported), saved.address).joinToString("\n"),
                         icon = ScaleSymbols.Scale,
                     )
                     if (support != null && support.implemented.isNotEmpty()) {
@@ -115,7 +119,15 @@ fun BluetoothScreen() {
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             support.implemented.forEach { cap ->
-                                AssistChip(onClick = {}, label = { Text(stringResource(cap.labelRes)) })
+                                Text(
+                                    stringResource(cap.labelRes),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier
+                                        .clip(PillShape)
+                                        .background(MaterialTheme.colorScheme.secondaryContainer)
+                                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                                )
                             }
                         }
                     }
@@ -217,40 +229,47 @@ private fun StatusCard(name: String?, driver: String?, status: ScaleStatus, hasS
     val scales = LocalContext.current.container.scales
     val busy = status is ScaleStatus.Scanning || status is ScaleStatus.Connecting
     val (title, body) = statusText(status, hasScale)
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(YoinContainerShapes.Card)
-            .background(if (status is ScaleStatus.Error) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer)
-            .padding(20.dp)
-            .animateContentSize(),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(56.dp)
-                    .clip(MaterialShapes.Cookie9Sided.toShape())
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (busy) LoadingIndicator(Modifier.size(40.dp)) else Icon(ScaleSymbols.Bluetooth, contentDescription = null)
+    val error = status is ScaleStatus.Error
+    val container by animateColorAsState(
+        if (error) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+        YoinMotion.defaultEffectsSpec(),
+        label = "status",
+    )
+    val content = if (error) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
+    CompositionLocalProvider(LocalContentColor provides content) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(YoinContainerShapes.Card)
+                .background(container)
+                .padding(20.dp)
+                .animateContentSize(),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(56.dp)
+                        .clip(MaterialShapes.Cookie9Sided.toShape())
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (busy) LoadingIndicator(Modifier.size(40.dp)) else Icon(ScaleSymbols.Bluetooth, contentDescription = null)
+                }
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(title, style = MaterialTheme.typography.titleLarge)
+                    listOfNotNull(name ?: driver, body).forEach { line ->
+                        Text(line, style = MaterialTheme.typography.bodyMedium, color = content.copy(alpha = 0.75f))
+                    }
+                }
             }
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleLarge)
-                Text(
-                    listOfNotNull(name ?: driver, body).joinToString(" · "),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        if (hasScale) {
-            Spacer(Modifier.height(16.dp))
-            if (status.isActive) {
-                FilledTonalButton(onClick = scales::disconnect, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.ble_disconnect)) }
-            } else {
-                Button(onClick = scales::connectSaved, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.ble_connect)) }
+            if (hasScale) {
+                Spacer(Modifier.height(16.dp))
+                if (status.isActive) {
+                    FilledTonalButton(onClick = scales::disconnect, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.ble_disconnect)) }
+                } else {
+                    Button(onClick = scales::connectSaved, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.ble_connect)) }
+                }
             }
         }
     }

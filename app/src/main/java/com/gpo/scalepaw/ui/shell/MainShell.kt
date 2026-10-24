@@ -144,7 +144,7 @@ fun ShellHeader(title: String, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-        ScaleStatusButton(status) {
+        ScaleStatusButton(status, hasScale = state.settings.scale.address != null) {
             val scales = context.container.scales
             when {
                 state.settings.scale.address == null || status is ScaleStatus.Error -> nav.push(Route.SettingsBluetooth)
@@ -167,7 +167,7 @@ fun ShellHeader(title: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ScaleStatusButton(status: ScaleStatus, onClick: () -> Unit) {
+private fun ScaleStatusButton(status: ScaleStatus, hasScale: Boolean, onClick: () -> Unit) {
     val busy = status is ScaleStatus.Connecting || status is ScaleStatus.Scanning
     val tint = when {
         status.isActive -> MaterialTheme.colorScheme.primary
@@ -176,7 +176,12 @@ private fun ScaleStatusButton(status: ScaleStatus, onClick: () -> Unit) {
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     IconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
-        Icon(ScaleSymbols.Bluetooth, contentDescription = stringResource(R.string.bluetooth), tint = tint)
+        val label = when {
+            !hasScale || status is ScaleStatus.Error -> R.string.bluetooth
+            status.isActive -> R.string.ble_disconnect
+            else -> R.string.ble_connect
+        }
+        Icon(ScaleSymbols.Bluetooth, contentDescription = stringResource(label), tint = tint)
     }
 }
 
