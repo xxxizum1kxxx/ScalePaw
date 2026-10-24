@@ -15,7 +15,8 @@ ScalePaw follows the Yoin design language (see Yoin's `docs/design.md`) and Pili
 
 ## Screens
 
-- **Main shell**: five tabs (overview, chart, table, statistics, insights) in a floating navigation bar; on expanded widths the bar becomes a rail and list screens gain a detail pane.
+- **Main shell**: five tabs (overview, chart, table, statistics, insights) in a floating navigation bar, with Start (weigh-in) and + (manual entry) above it; on expanded widths the bar becomes a rail and list screens gain a detail pane.
+- **Weigh-in**: one session on the active scale; status card, live weight, pending readings to confirm.
 - **Overview**: the latest weight as the hero, its change and trend, a compact chart, pinned metric tiles with evaluation colour, goals, and recent entries.
 - **Measurement**: one form with every enabled metric; derived metrics show as read-only values with the inputs they need.
 - **Chart**: metric chips, range toggle, optional smoothing, trend and goal lines; scrubbing shows the values at that day.
@@ -25,7 +26,10 @@ ScalePaw follows the Yoin design language (see Yoin's `docs/design.md`) and Pili
 
 ## Bluetooth
 
-- One status card at the top of the Bluetooth page; its shape morphs and its colour moves to `errorContainer` on failure.
-- Readings save without confirmation and surface as an app-wide snackbar, so a weigh-in works from any screen.
-- When a driver needs the user (choose a scale user slot, enter a consent code), an app-wide dialog asks; the driver waits.
-- Driver-specific settings (keys, slots) render below the saved scale using the driver's own UI, restyled with Yoin fields.
+- Several scales can be saved; exactly one is active. The Bluetooth page lists them with a radio each; the active one expands to its capabilities, connection profile and "forget". Pairing a nearby scale saves it and makes it active.
+- The app-bar Bluetooth button always opens the Bluetooth page; it only tints when a scale is active and never connects.
+- The main shell offers two actions: **Start** opens the weigh-in page, **+** opens the manual entry form. Start goes to the Bluetooth page while no scale is active.
+- The scale is connected only while the weigh-in page is open. Its status card morphs shape and colour through connecting, step on, measuring (live weight when the driver reports it), reading received and error.
+- Readings are held until confirmed: each shows its profile (tap to reassign) and values; Save stores them, Weigh again discards them. Leaving the page disconnects and drops anything unsaved.
+- When a driver needs the user (choose a scale user slot, enter a consent code), the weigh-in page asks in a dialog; the driver waits.
+- Driver-specific settings (keys, slots) render below the saved scales for the active scale using the driver's own UI, restyled with Yoin fields; each saved scale keeps its own driver storage.

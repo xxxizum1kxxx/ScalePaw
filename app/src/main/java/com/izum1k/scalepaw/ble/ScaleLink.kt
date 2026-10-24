@@ -20,6 +20,8 @@ sealed interface LinkState {
     data object Connecting : LinkState
     data class Connected(val name: String?) : LinkState
     data object Listening : LinkState
+    /** A listening scale's driver took a first packet and waits for more. */
+    data object Receiving : LinkState
     data class Message(val text: String) : LinkState
     /** The session is over; [error] is null when it ended normally. */
     data class Closed(val error: String?) : LinkState

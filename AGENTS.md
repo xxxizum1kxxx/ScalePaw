@@ -26,7 +26,7 @@ ScalePaw is an Android Compose rewrite of openScale: a body-weight and body-comp
 - `data/` holds persistence and transfer; `domain/` holds pure calculations and must not touch Android APIs, so it stays unit-testable.
 - `ScaleRepository` is the only writer. Screens read `container.session.state`, one `StateFlow` with the active user, metric types, measurements and settings.
 - Measurements are a timestamp plus a value per metric type. Derived metrics (BMI, LBM, WHR, WHtR, BMR, TDEE, caliper fat) are recomputed by `MeasurementProcessor` on every save and are never entered by hand.
-- `ble/` owns transports and the scale lifecycle. A driver only sees `ScaleDeviceHandler`'s callbacks; `ScaleManager` maps its `ScaleMeasurement` into a `ScaleReading` and hands it to `ScaleRepository.saveScaleReading`.
+- `ble/` owns transports and the scale lifecycle. A driver only sees `ScaleDeviceHandler`'s callbacks; `ScaleManager` maps its `ScaleMeasurement` into a `ScaleReading`, prepares it with `ScaleRepository.prepareScaleReading` and stores it with `commitScaleReading` once the user confirms on the weigh-in page.
 
 ## openScale drivers
 

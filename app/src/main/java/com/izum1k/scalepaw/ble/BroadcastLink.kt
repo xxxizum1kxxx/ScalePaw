@@ -29,8 +29,9 @@ class BroadcastLink(link: LinkContext, private val tuning: BleBroadcastTuning) :
     private var lastForward = 0L
     private var attempt = 0
     private var scanning = false
+    private var heard = false
     private var timeout: Job? = null
-    private var deferred: ScanResult? = null
+    private val deferred = LinkedHashMap<Int, ScanResult>()
     private var deferJob: Job? = null
     private var address = ""
 
@@ -96,16 +97,16 @@ class BroadcastLink(link: LinkContext, private val tuning: BleBroadcastTuning) :
         seen.entries.removeAll { now - it.value > tuning.packetDedupWindowMs }
         val wait = tuning.stabilizeWindowMs - (now - lastForward)
         if (wait > 0) {
-            // Multi-packet scales (S400) send their second packet inside the window; hold the
-            // newest one for its end instead of dropping it.
-            deferred = result
+            // Multi-packet scales (S400) send their second packet inside the window, followed by
+            // idle beacons; hold the newest of each payload for its end so none displaces another.
+            deferred[contentHash(result.scanRecord?.bytes, 0)] = result
             if (deferJob == null) {
                 deferJob = scope.launch {
                     delay(wait)
                     deferJob = null
-                    val held = deferred ?: return@launch
-                    deferred = null
-                    if (scanning) forward(held)
+                    val held = deferred.values.toList()
+                    deferred.clear()
+                    for (r in held) if (scanning) forward(r)
                 }
             }
             return
@@ -116,7 +117,13 @@ class BroadcastLink(link: LinkContext, private val tuning: BleBroadcastTuning) :
     private fun forward(result: ScanResult) {
         when (handler.onAdvertisement(result, link.user)) {
             BroadcastAction.IGNORED -> Unit
-            BroadcastAction.CONSUMED_KEEP_SCANNING -> lastForward = SystemClock.elapsedRealtime()
+            BroadcastAction.CONSUMED_KEEP_SCANNING -> {
+                lastForward = SystemClock.elapsedRealtime()
+                if (!heard) {
+                    heard = true
+                    emit(LinkState.Receiving)
+                }
+            }
             BroadcastAction.CONSUMED_STOP -> finish(null)
         }
     }
@@ -126,7 +133,7 @@ class BroadcastLink(link: LinkContext, private val tuning: BleBroadcastTuning) :
         timeout = null
         deferJob?.cancel()
         deferJob = null
-        deferred = null
+        deferred.clear()
         if (scanning) runCatching { adapter?.bluetoothLeScanner?.stopScan(callback) }
         scanning = false
     }

@@ -59,15 +59,14 @@
     <string name="ble_choose_user">选择秤上的用户</string>
     <string name="ble_choose_user_empty">体重秤没有报告任何用户。</string>
     <string name="ble_choose_user_text">这台秤保存着自己的用户列表，请选择属于你的那一项。</string>
-    <string name="ble_connect">连接</string>
     <string name="ble_consent_code">验证码</string>
     <string name="ble_developer">开发者模式</string>
     <string name="ble_developer_summary">可连接任意设备并记录其蓝牙通信，不保存任何数据。</string>
-    <string name="ble_disconnect">断开</string>
     <string name="ble_driver_settings">体重秤设置</string>
     <string name="ble_enter_consent">输入体重秤验证码</string>
     <string name="ble_enter_consent_text">输入体重秤屏幕上显示的验证码，将其与此资料关联。</string>
     <string name="ble_error_connect">无法连接到体重秤（状态 %1$d）。</string>
+    <string name="ble_error_no_scale">没有激活的体重秤，请在蓝牙页面中选择一台。</string>
     <string name="ble_error_no_signal">没有收到读数。请站上体重秤后重试。</string>
     <string name="ble_error_no_user">使用体重秤前请先创建个人资料。</string>
     <string name="ble_error_off">蓝牙已关闭。</string>
@@ -80,16 +79,13 @@
     <string name="ble_ignored">读数已忽略：与任何资料都不匹配。</string>
     <string name="ble_nearby">附近的体重秤</string>
     <string name="ble_retrying">正在重试（%1$d / %2$d）…</string>
-    <string name="ble_saved">已为 %1$s 保存读数</string>
-    <string name="ble_saved_scale">你的体重秤</string>
+    <string name="ble_saved">已保存</string>
+    <string name="ble_saved_scales">已保存的体重秤</string>
     <string name="ble_search">搜索</string>
     <string name="ble_search_hint">先站上体重秤将其唤醒，然后搜索。</string>
     <string name="ble_searching">正在搜索…</string>
-    <string name="ble_status_connected">已连接</string>
     <string name="ble_status_connecting">正在连接…</string>
     <string name="ble_status_error">连接出错</string>
-    <string name="ble_status_idle">未连接</string>
-    <string name="ble_status_listening">正在监听</string>
     <string name="ble_status_none">尚未添加体重秤</string>
     <string name="ble_status_scanning">正在寻找体重秤…</string>
     <string name="ble_step_on">请站上体重秤</string>
@@ -347,6 +343,23 @@
     <string name="volatility_high">大</string>
     <string name="volatility_moderate">中等</string>
     <string name="volatility_stable">小</string>
+    <string name="presence_found">体重秤在附近，点按重新搜索</string>
+    <string name="presence_missing">未搜索到体重秤，点按重新搜索</string>
+    <string name="presence_none">尚未添加体重秤，打开蓝牙页面</string>
+    <string name="presence_searching">正在搜索体重秤…</string>
+    <string name="presence_unavailable">蓝牙不可用，点按授权</string>
+    <string name="presence_unknown">体重秤状态未知，点按搜索</string>
+    <string name="weigh_again">重新测量</string>
+    <string name="weigh_change_user">更换资料</string>
+    <string name="weigh_disconnected">体重秤已断开</string>
+    <string name="weigh_done">已收到读数</string>
+    <string name="weigh_measuring">正在测量…</string>
+    <string name="weigh_retry">重试</string>
+    <string name="weigh_scale_busy">其他应用（如米家）正连接着这台秤，读数到不了 ScalePaw。请关掉该应用后重新上秤。</string>
+    <string name="weigh_start">开始测量</string>
+    <string name="weigh_find_scale">搜索体重秤</string>
+    <string name="weigh_searching">正在搜索…</string>
+    <string name="weigh_title">称重</string>
     <string name="welcome_body">创建一份个人资料即可开始记录。身高、年龄与性别能让身体成分的估算更准确。</string>
     <string name="welcome_create_profile">创建资料</string>
     <string name="widget_weight_label">最新体重</string>
@@ -368,6 +381,9 @@
     </plurals>
     <plurals name="more_count">
         <item quantity="other">还有 %d 条</item>
+    </plurals>
+    <plurals name="weigh_save_all">
+        <item quantity="other">保存全部 %d 条读数</item>
     </plurals>
     <plurals name="years_count">
         <item quantity="other">%d 年</item>

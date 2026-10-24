@@ -17,9 +17,10 @@ import com.izum1k.scalepaw.data.model.UnitType
 import com.izum1k.scalepaw.data.model.User
 import com.izum1k.scalepaw.data.model.UserGoal
 import com.izum1k.scalepaw.data.settings.SettingsRepository
+import com.izum1k.scalepaw.domain.Assignment
 import com.izum1k.scalepaw.domain.BodyFormulas
 import com.izum1k.scalepaw.domain.MeasurementProcessor
-import kotlin.math.abs
+import com.izum1k.scalepaw.domain.ScaleAssignment
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -40,10 +41,17 @@ data class ScaleReading(
     val extraNames: Map<String, String> = emptyMap(),
 )
 
-sealed interface SaveResult {
-    data class Saved(val measurementId: Long, val userId: Long) : SaveResult
-    data object Ignored : SaveResult
-    data object NoUser : SaveResult
+/** A scale reading prepared for [userId] and not stored yet; [values] are keyed by metric type id. */
+data class PendingReading(
+    val reading: ScaleReading,
+    val userId: Long,
+    val values: Map<Long, MetricValue>,
+)
+
+sealed interface Prepared {
+    data class Ready(val pending: PendingReading) : Prepared
+    data object Ignored : Prepared
+    data object NoUser : Prepared
 }
 
 /**
@@ -225,13 +233,14 @@ class ScaleRepository(
     suspend fun recalculateAll() = users.getAll().forEach { recalculate(it.id) }
 
     /**
-     * Stores a scale reading: picks the user (scale slot, smart assignment or the current user),
-     * applies assisted weighing and amputation correction, converts wire units to each type's unit.
+     * Prepares a scale reading without storing it: picks the user ([forcedUserId], scale slot, smart
+     * assignment or the current user), applies assisted weighing and amputation correction, converts
+     * wire units to each type's unit and computes derived values.
      */
-    suspend fun saveScaleReading(reading: ScaleReading): SaveResult {
+    suspend fun prepareScaleReading(reading: ScaleReading, forcedUserId: Long? = null): Prepared {
         val s = settings.current()
         val allUsers = usersNow()
-        if (allUsers.isEmpty()) return SaveResult.NoUser
+        if (allUsers.isEmpty()) return Prepared.NoUser
         val byIdentity = ensureDeviceTypes(reading.extraSpecs, reading.extraNames)
         val weightType = byIdentity[Metrics.WEIGHT.identity]
 
@@ -251,25 +260,30 @@ class ScaleRepository(
             }
         }.toMap()
 
-        val slotUser = reading.userId?.takeIf { id -> allUsers.any { it.id == id } }
-        var user = allUsers.firstOrNull { it.id == slotUser } ?: allUsers.firstOrNull { it.id == s.currentUserId } ?: allUsers.first()
         val weightKg = weightType?.let { t -> wireValues[t.id]?.float?.let { UnitConversion.toKg(it, t.unit) } }
-
-        if (slotUser == null && s.assignment.smartAssignment && weightKg != null && weightType != null) {
-            val candidates = allUsers.mapNotNull { u ->
-                val last = measurementDao.getForUser(u.id).firstNotNullOfOrNull { m ->
+        val lastWeightKg = if (weightType == null || forcedUserId != null || !s.assignment.smartAssignment) {
+            emptyMap()
+        } else {
+            allUsers.mapNotNull { u ->
+                measurementDao.getForUser(u.id).firstNotNullOfOrNull { m ->
                     m.values.firstOrNull { it.typeId == weightType.id }?.floatValue
-                }?.let { UnitConversion.toKg(it, weightType.unit) } ?: return@mapNotNull null
-                if (last <= 0f) null else u to abs(weightKg - last) / last * 100f
-            }
-            val best = candidates.minByOrNull { it.second }
-            if (best != null) {
-                if (best.second <= s.assignment.tolerancePercent) {
-                    user = best.first
-                } else if (s.assignment.ignoreOutsideTolerance) {
-                    return SaveResult.Ignored
-                }
-            }
+                }?.let { u.id to UnitConversion.toKg(it, weightType.unit) }
+            }.toMap()
+        }
+        val assignment = ScaleAssignment.choose(
+            userIds = allUsers.map { it.id },
+            currentUserId = s.currentUserId,
+            forcedUserId = forcedUserId,
+            slotUserId = reading.userId,
+            weightKg = weightKg,
+            lastWeightKg = lastWeightKg,
+            smartAssignment = s.assignment.smartAssignment,
+            tolerancePercent = s.assignment.tolerancePercent,
+            ignoreOutsideTolerance = s.assignment.ignoreOutsideTolerance,
+        )
+        val user = when (assignment) {
+            Assignment.Ignored -> return Prepared.Ignored
+            is Assignment.To -> allUsers.first { it.id == assignment.userId }
         }
 
         var values = wireValues
@@ -290,9 +304,10 @@ class ScaleRepository(
             settings = s.formulas.copy(carryOverValues = false),
             applyAmputation = true,
         )
-        val id = write(user.id, reading.timestamp, processed, null)
-        return SaveResult.Saved(id, user.id)
+        return Prepared.Ready(PendingReading(reading, user.id, processed))
     }
+
+    suspend fun commitScaleReading(p: PendingReading): Long = write(p.userId, p.reading.timestamp, p.values, null)
 
     // ── Goals ──────────────────────────────────────────────────────────────
 

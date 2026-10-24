@@ -75,6 +75,11 @@ object ScaleSymbols {
         symbol("Bluetooth", "M7 7.5 L16.5 16 L12 20 L12 4 L16.5 8 L7 16.5")
     }
 
+    /** Bluetooth rune struck through: off or not permitted. */
+    val BluetoothOff: ImageVector by lazy {
+        symbol("BluetoothOff", "M7 7.5 L16.5 16 L12 20 L12 4 L16.5 8 L7 16.5", "M4 4 L20 20")
+    }
+
     val Drop: ImageVector by lazy {
         symbol("Drop", "M12 3.75 C12 3.75 5.75 10.3 5.75 14.25 C5.75 17.702 8.548 20.5 12 20.5 C15.452 20.5 18.25 17.702 18.25 14.25 C18.25 10.3 12 3.75 12 3.75 Z")
     }

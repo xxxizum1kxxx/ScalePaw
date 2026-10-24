@@ -1,6 +1,7 @@
 package com.izum1k.scalepaw.ui.shell
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -19,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -28,9 +28,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,11 +46,17 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.izum1k.scalepaw.ui.component.ScaleFab
 import com.izum1k.scalepaw.R
-import com.izum1k.scalepaw.ble.ScaleStatus
+import com.izum1k.scalepaw.ble.ScalePresence
 import com.izum1k.scalepaw.container
 import com.izum1k.scalepaw.data.model.User
 import com.izum1k.scalepaw.feature.chart.ChartScreen
@@ -85,6 +93,13 @@ fun MainShell() {
 private fun Tabs() {
     var tab by rememberSaveable { mutableStateOf(0) }
     val nav = LocalNavigator.current
+    val container = LocalContext.current.container
+    val session by container.session.state.collectAsState()
+    val hasScale = session.settings.scale.active != null
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(container, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) { container.scales.watchPresence() }
+    }
     val tabs = listOf(
         NavTab(stringResource(R.string.tab_overview), YoinSymbols.Home, YoinSymbols.HomeFilled),
         NavTab(stringResource(R.string.tab_chart), ScaleSymbols.Chart),
@@ -114,15 +129,53 @@ private fun Tabs() {
             }
         }
         Column(Modifier.align(Alignment.BottomCenter), horizontalAlignment = Alignment.End) {
-            ScaleFab(
-                text = stringResource(R.string.action_add_measurement),
-                icon = YoinSymbols.Add,
-                onClick = { nav.push(Route.MeasurementEdit()) },
+            Row(
                 modifier = Modifier
                     .readingWidth(1200.dp)
-                    .wrapContentWidth(Alignment.End)
+                    .fillMaxWidth()
                     .padding(end = 16.dp),
-            )
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val haptics = LocalHapticFeedback.current
+                val addLabel = stringResource(R.string.action_add_measurement)
+                SmallFloatingActionButton(
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
+                        nav.push(Route.MeasurementEdit())
+                    },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.semantics { contentDescription = addLabel },
+                ) {
+                    Icon(YoinSymbols.Add, contentDescription = null)
+                }
+                val presence by container.scales.presence.collectAsStateWithLifecycle()
+                val unreachable = hasScale && (presence == ScalePresence.MISSING || presence == ScalePresence.SEARCHING)
+                val fabColor by animateColorAsState(
+                    if (unreachable) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.primaryContainer,
+                    YoinMotion.defaultEffectsSpec(),
+                    label = "startFab",
+                )
+                ScaleFab(
+                    text = stringResource(
+                        when {
+                            presence == ScalePresence.SEARCHING && hasScale -> R.string.weigh_searching
+                            unreachable -> R.string.weigh_find_scale
+                            else -> R.string.weigh_start
+                        },
+                    ),
+                    icon = if (unreachable) ScaleSymbols.Bluetooth else YoinSymbols.PlayArrow,
+                    containerColor = fabColor,
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
+                        when {
+                            !hasScale -> nav.push(Route.SettingsBluetooth)
+                            unreachable -> container.scales.refreshPresence()
+                            else -> nav.push(Route.Weigh)
+                        }
+                    },
+                )
+            }
             FloatingNavBar(tabs = tabs, selected = tab, onSelect = { tab = it })
         }
     }
@@ -134,7 +187,6 @@ fun ShellHeader(title: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val nav = LocalNavigator.current
     val state by context.container.session.state.collectAsState()
-    val status by context.container.scales.status.collectAsState()
     var pickUser by remember { mutableStateOf(false) }
     Row(
         modifier
@@ -144,14 +196,7 @@ fun ShellHeader(title: String, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-        ScaleStatusButton(status, hasScale = state.settings.scale.address != null) {
-            val scales = context.container.scales
-            when {
-                state.settings.scale.address == null || status is ScaleStatus.Error -> nav.push(Route.SettingsBluetooth)
-                status.isActive -> scales.disconnect()
-                else -> scales.connectSaved()
-            }
-        }
+        ScalePresenceButton()
         state.user?.let { user ->
             IconButton(onClick = { pickUser = true }, shapes = IconButtonDefaults.shapes()) {
                 UserBadge(user.name, user.avatar, size = 32.dp)
@@ -163,25 +208,6 @@ fun ShellHeader(title: String, modifier: Modifier = Modifier) {
     }
     if (pickUser) {
         UserSwitcherSheet(state.users, state.user?.id, onDismiss = { pickUser = false })
-    }
-}
-
-@Composable
-private fun ScaleStatusButton(status: ScaleStatus, hasScale: Boolean, onClick: () -> Unit) {
-    val busy = status is ScaleStatus.Connecting || status is ScaleStatus.Scanning
-    val tint = when {
-        status.isActive -> MaterialTheme.colorScheme.primary
-        busy -> MaterialTheme.colorScheme.tertiary
-        status is ScaleStatus.Error -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    IconButton(onClick = onClick, shapes = IconButtonDefaults.shapes()) {
-        val label = when {
-            !hasScale || status is ScaleStatus.Error -> R.string.bluetooth
-            status.isActive -> R.string.ble_disconnect
-            else -> R.string.ble_connect
-        }
-        Icon(ScaleSymbols.Bluetooth, contentDescription = stringResource(label), tint = tint)
     }
 }
 

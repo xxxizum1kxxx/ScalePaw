@@ -1,14 +1,6 @@
 package com.izum1k.scalepaw.feature.bluetooth
 
-import com.izum1k.scalepaw.ui.component.PillShape
-import com.izum1k.scalepaw.ui.theme.YoinMotion
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.animation.animateColorAsState
-import android.bluetooth.BluetoothAdapter
-import android.content.Intent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,11 +22,14 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,104 +45,67 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gpo.yoin.symbols.YoinSymbols
 import com.izum1k.scalepaw.R
 import com.izum1k.scalepaw.ble.DiscoveredScale
-import com.izum1k.scalepaw.ble.ScaleStatus
+import com.izum1k.scalepaw.ble.openscale.scales.DeviceSupport
 import com.izum1k.scalepaw.ble.openscale.scales.LinkMode
 import com.izum1k.scalepaw.ble.openscale.scales.TuningProfile
 import com.izum1k.scalepaw.container
+import com.izum1k.scalepaw.data.settings.SavedScale
 import com.izum1k.scalepaw.ui.component.ChoiceRow
 import com.izum1k.scalepaw.ui.component.ConfirmDialog
+import com.izum1k.scalepaw.ui.component.PillShape
+import com.izum1k.scalepaw.ui.component.Reveal
 import com.izum1k.scalepaw.ui.component.ScalePage
 import com.izum1k.scalepaw.ui.component.ScaleSymbols
 import com.izum1k.scalepaw.ui.component.Section
 import com.izum1k.scalepaw.ui.component.SettingRow
 import com.izum1k.scalepaw.ui.component.SwitchRow
+import com.izum1k.scalepaw.ui.navigation.LocalNavigator
+import com.izum1k.scalepaw.ui.navigation.Route
 import com.izum1k.scalepaw.ui.theme.YoinContainerShapes
-import com.gpo.yoin.symbols.YoinSymbols
+import com.izum1k.scalepaw.ui.theme.YoinMotion
 
-/** Pair a scale, connect to it, tune the link and reach the driver's own settings. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
+/** Pair scales, pick the active one, tune its link and reach the driver's own settings. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BluetoothScreen() {
     val context = LocalContext.current
     val scales = context.container.scales
     val haptics = LocalHapticFeedback.current
     val state by context.container.session.state.collectAsStateWithLifecycle()
-    val status by scales.status.collectAsStateWithLifecycle()
     val devices by scales.scanner.devices.collectAsStateWithLifecycle()
     val scanning by scales.scanner.scanning.collectAsStateWithLifecycle()
-    val saved = state.settings.scale
-    var permitted by remember { mutableStateOf(scales.hasPermissions()) }
-    var confirmForget by rememberSaveable { mutableStateOf(false) }
+    val settings = state.settings.scale
+    val active = settings.active
+    val savedAddresses = remember(settings.devices) { settings.devices.map { it.address }.toSet() }
+    var forgetting by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        permitted = scales.hasPermissions()
-        if (permitted) scales.startDiscovery()
-    }
-    val enableLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (scales.isBluetoothOn()) scales.startDiscovery()
-    }
-    fun search() {
-        when {
-            !permitted -> permissionLauncher.launch(scales.requiredPermissions)
-            !scales.isBluetoothOn() -> enableLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
-            else -> scales.startDiscovery()
-        }
-    }
+    val search = rememberBluetoothAccess(onDone = scales::startDiscovery)
     DisposableEffect(Unit) { onDispose { scales.stopDiscovery() } }
 
-    val support = remember(saved.snapshot, saved.address) { scales.supportFor(saved) }
-    val configHandler = remember(saved.snapshot, saved.address) { scales.configurationHandler(saved) }
+    val configHandler = remember(active) { active?.let(scales::configurationHandler) }
 
     ScalePage(title = stringResource(R.string.bluetooth)) {
-        item { StatusCard(saved.name, support?.displayName, status, hasScale = saved.address != null) }
+        item { ActiveCard(active, active?.let(scales::supportFor)) }
 
-        if (saved.address != null) {
+        if (settings.devices.isNotEmpty()) {
             item {
-                Section(title = stringResource(R.string.ble_saved_scale)) {
-                    SettingRow(
-                        title = saved.name ?: saved.address.orEmpty(),
-                        value = listOfNotNull(support?.displayName ?: stringResource(R.string.ble_unsupported), saved.address).joinToString("\n"),
-                        icon = ScaleSymbols.Scale,
-                    )
-                    if (support != null && support.implemented.isNotEmpty()) {
-                        FlowRow(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            support.implemented.forEach { cap ->
-                                Text(
-                                    stringResource(cap.labelRes),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier
-                                        .clip(PillShape)
-                                        .background(MaterialTheme.colorScheme.secondaryContainer)
-                                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                                )
-                            }
-                        }
+                Section(title = stringResource(R.string.ble_saved_scales)) {
+                    settings.devices.forEach { saved ->
+                        SavedScaleBlock(
+                            saved = saved,
+                            support = remember(saved) { scales.supportFor(saved) },
+                            active = saved.address == settings.activeAddress,
+                            onActivate = {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                scales.activate(saved.address)
+                            },
+                            onTuning = { scales.setTuning(saved.address, it) },
+                            onForget = { forgetting = saved.address },
+                        )
                     }
-                    val profiles = listOf<TuningProfile?>(null) + TuningProfile.entries
-                    ChoiceRow(
-                        title = stringResource(R.string.ble_tuning),
-                        options = profiles,
-                        selected = saved.tuning?.let { runCatching { TuningProfile.valueOf(it) }.getOrNull() },
-                        label = { p ->
-                            p?.let { stringResource(it.labelRes) }
-                                ?: stringResource(R.string.ble_tuning_default, support?.tuningProfile?.let { stringResource(it.labelRes) }.orEmpty())
-                        },
-                        onSelect = scales::setTuning,
-                        icon = YoinSymbols.Settings,
-                    )
-                    SettingRow(
-                        title = stringResource(R.string.ble_forget),
-                        icon = YoinSymbols.Delete,
-                        onClick = { confirmForget = true },
-                    )
                 }
             }
             if (configHandler != null) {
@@ -176,7 +134,7 @@ fun BluetoothScreen() {
                     if (scanning) {
                         LoadingIndicator(Modifier.size(40.dp))
                     } else {
-                        FilledTonalButton(onClick = ::search) {
+                        FilledTonalButton(onClick = search) {
                             Icon(YoinSymbols.Search, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
                             Text(stringResource(R.string.ble_search))
@@ -188,8 +146,9 @@ fun BluetoothScreen() {
         items(devices, key = { it.address }) { device ->
             DeviceRow(
                 device = device,
-                selected = device.address == saved.address,
-                enabled = device.isSupported || saved.developerMode,
+                saved = device.address in savedAddresses,
+                active = device.address == settings.activeAddress,
+                enabled = device.isSupported || settings.developerMode,
                 modifier = Modifier.animateItem(),
             ) {
                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)
@@ -202,7 +161,7 @@ fun BluetoothScreen() {
                 SwitchRow(
                     title = stringResource(R.string.ble_developer),
                     value = stringResource(R.string.ble_developer_summary),
-                    checked = saved.developerMode,
+                    checked = settings.developerMode,
                     onCheckedChange = scales::setDeveloperMode,
                     icon = YoinSymbols.Info,
                 )
@@ -210,32 +169,31 @@ fun BluetoothScreen() {
         }
     }
 
-    if (confirmForget) {
+    forgetting?.let { address ->
         ConfirmDialog(
             title = stringResource(R.string.ble_forget),
             text = stringResource(R.string.ble_forget_text),
             confirm = stringResource(R.string.action_remove),
-            onDismiss = { confirmForget = false },
+            onDismiss = { forgetting = null },
         ) {
-            confirmForget = false
-            scales.forget()
+            forgetting = null
+            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+            scales.forget(address)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun StatusCard(name: String?, driver: String?, status: ScaleStatus, hasScale: Boolean) {
-    val scales = LocalContext.current.container.scales
-    val busy = status is ScaleStatus.Scanning || status is ScaleStatus.Connecting
-    val (title, body) = statusText(status, hasScale)
-    val error = status is ScaleStatus.Error
+private fun ActiveCard(active: SavedScale?, support: DeviceSupport?) {
+    val nav = LocalNavigator.current
+    val haptics = LocalHapticFeedback.current
     val container by animateColorAsState(
-        if (error) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+        if (active != null) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
         YoinMotion.defaultEffectsSpec(),
-        label = "status",
+        label = "activeScale",
     )
-    val content = if (error) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
+    val content = if (active != null) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
     CompositionLocalProvider(LocalContentColor provides content) {
         Column(
             Modifier
@@ -243,51 +201,132 @@ private fun StatusCard(name: String?, driver: String?, status: ScaleStatus, hasS
                 .clip(YoinContainerShapes.Card)
                 .background(container)
                 .padding(20.dp)
-                .animateContentSize(),
+                .animateContentSize(YoinMotion.defaultSpatialSpec()),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     Modifier
                         .size(56.dp)
-                        .clip(MaterialShapes.Cookie9Sided.toShape())
+                        .clip((if (active != null) MaterialShapes.Cookie9Sided else MaterialShapes.Circle).toShape())
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    if (busy) LoadingIndicator(Modifier.size(40.dp)) else Icon(ScaleSymbols.Bluetooth, contentDescription = null)
+                    Icon(ScaleSymbols.Scale, contentDescription = null)
                 }
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(title, style = MaterialTheme.typography.titleLarge)
-                    listOfNotNull(name ?: driver, body).forEach { line ->
-                        Text(line, style = MaterialTheme.typography.bodyMedium, color = content.copy(alpha = 0.75f))
-                    }
+                    Text(
+                        active?.name ?: stringResource(R.string.ble_status_none),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Text(
+                        if (active != null) {
+                            support?.displayName ?: stringResource(R.string.ble_unsupported)
+                        } else {
+                            stringResource(R.string.ble_search_hint)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = content.copy(alpha = 0.75f),
+                    )
                 }
             }
-            if (hasScale) {
+            if (active != null) {
                 Spacer(Modifier.height(16.dp))
-                if (status.isActive) {
-                    FilledTonalButton(onClick = scales::disconnect, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.ble_disconnect)) }
-                } else {
-                    Button(onClick = scales::connectSaved, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.ble_connect)) }
+                Button(
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
+                        nav.push(Route.Weigh)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(YoinSymbols.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.weigh_start))
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun statusText(status: ScaleStatus, hasScale: Boolean): Pair<String, String?> = when (status) {
-    ScaleStatus.Idle -> stringResource(if (hasScale) R.string.ble_status_idle else R.string.ble_status_none) to null
-    ScaleStatus.Scanning -> stringResource(R.string.ble_status_scanning) to null
-    ScaleStatus.Connecting -> stringResource(R.string.ble_status_connecting) to null
-    is ScaleStatus.Connected -> stringResource(R.string.ble_status_connected) to stringResource(R.string.ble_step_on)
-    is ScaleStatus.Listening -> stringResource(R.string.ble_status_listening) to stringResource(R.string.ble_step_on)
-    is ScaleStatus.Error -> stringResource(R.string.ble_status_error) to status.message
+private fun SavedScaleBlock(
+    saved: SavedScale,
+    support: DeviceSupport?,
+    active: Boolean,
+    onActivate: () -> Unit,
+    onTuning: (TuningProfile?) -> Unit,
+    onForget: () -> Unit,
+) {
+    val container by animateColorAsState(
+        if (active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+        YoinMotion.defaultEffectsSpec(),
+        label = "savedScale",
+    )
+    Column(Modifier.background(container)) {
+        SettingRow(
+            title = saved.name ?: saved.address,
+            value = listOfNotNull(support?.displayName ?: stringResource(R.string.ble_unsupported), saved.address).joinToString("\n"),
+            icon = ScaleSymbols.Scale,
+            onClick = onActivate,
+        ) {
+            RadioButton(selected = active, onClick = onActivate)
+        }
+        Reveal(active) {
+            Column {
+                if (support != null && support.implemented.isNotEmpty()) {
+                    FlowRow(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        support.implemented.forEach { cap ->
+                            Text(
+                                stringResource(cap.labelRes),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier
+                                    .clip(PillShape)
+                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                            )
+                        }
+                    }
+                }
+                val profiles = listOf<TuningProfile?>(null) + TuningProfile.entries
+                ChoiceRow(
+                    title = stringResource(R.string.ble_tuning),
+                    options = profiles,
+                    selected = saved.tuning?.let { runCatching { TuningProfile.valueOf(it) }.getOrNull() },
+                    label = { p ->
+                        p?.let { stringResource(it.labelRes) }
+                            ?: stringResource(R.string.ble_tuning_default, support?.tuningProfile?.let { stringResource(it.labelRes) }.orEmpty())
+                    },
+                    onSelect = onTuning,
+                    icon = YoinSymbols.Settings,
+                )
+                SettingRow(
+                    title = stringResource(R.string.ble_forget),
+                    icon = YoinSymbols.Delete,
+                    onClick = onForget,
+                )
+            }
+        }
+    }
 }
 
 @Composable
-private fun DeviceRow(device: DiscoveredScale, selected: Boolean, enabled: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val container = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer
+private fun DeviceRow(
+    device: DiscoveredScale,
+    saved: Boolean,
+    active: Boolean,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val container = if (active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer
     val alpha = if (enabled) 1f else 0.5f
     Row(
         modifier
@@ -311,7 +350,10 @@ private fun DeviceRow(device: DiscoveredScale, selected: Boolean, enabled: Boole
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
             )
             Text(
-                device.support?.displayName ?: stringResource(R.string.ble_unsupported),
+                listOfNotNull(
+                    device.support?.displayName ?: stringResource(R.string.ble_unsupported),
+                    stringResource(R.string.ble_saved).takeIf { saved },
+                ).joinToString(" · "),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (device.isSupported) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha),
             )
@@ -319,7 +361,7 @@ private fun DeviceRow(device: DiscoveredScale, selected: Boolean, enabled: Boole
         if (device.info.rssi != 0) {
             Text("${device.info.rssi} dBm", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (selected) {
+        if (active) {
             Spacer(Modifier.width(8.dp))
             Icon(YoinSymbols.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         }

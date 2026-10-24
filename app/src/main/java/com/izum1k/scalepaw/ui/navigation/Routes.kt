@@ -15,6 +15,9 @@ sealed interface Route : NavKey {
 
     @Serializable data class MeasurementDetail(val id: Long) : Route
 
+    /** A weigh-in on the active scale; the scale is connected only while this is open. */
+    @Serializable data object Weigh : Route
+
     /** Raw entries inside an aggregated period. */
     @Serializable data class PeriodEntries(val start: Long, val endExclusive: Long) : Route
 

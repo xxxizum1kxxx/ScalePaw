@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -25,7 +24,6 @@ import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import com.izum1k.scalepaw.feature.about.AboutScreen
 import com.izum1k.scalepaw.feature.bluetooth.BluetoothScreen
-import com.izum1k.scalepaw.feature.bluetooth.ScaleOverlay
 import com.izum1k.scalepaw.feature.compare.ComparisonScreen
 import com.izum1k.scalepaw.feature.data.DataSettingsScreen
 import com.izum1k.scalepaw.feature.goals.GoalsScreen
@@ -40,6 +38,7 @@ import com.izum1k.scalepaw.feature.settings.SettingsScreen
 import com.izum1k.scalepaw.feature.table.PeriodEntriesScreen
 import com.izum1k.scalepaw.feature.users.UserEditScreen
 import com.izum1k.scalepaw.feature.users.UserSettingsScreen
+import com.izum1k.scalepaw.feature.weigh.WeighScreen
 import com.izum1k.scalepaw.ui.component.WidthClass
 import com.izum1k.scalepaw.ui.component.widthClass
 import com.izum1k.scalepaw.ui.shell.MainShell
@@ -80,6 +79,7 @@ fun AppNavHost(navigator: Navigator) {
                     entry<Route.Main>(metadata = ListPane) { MainShell() }
                     entry<Route.MeasurementEdit> { MeasurementEditScreen(it.id) }
                     entry<Route.MeasurementDetail>(metadata = DetailPane) { MeasurementDetailScreen(it.id) }
+                    entry<Route.Weigh> { WeighScreen() }
                     entry<Route.PeriodEntries> { PeriodEntriesScreen(it.start, it.endExclusive) }
                     entry<Route.Comparison> { ComparisonScreen(it.start, it.end) }
                     entry<Route.Settings> { SettingsScreen() }
@@ -96,7 +96,6 @@ fun AppNavHost(navigator: Navigator) {
                     entry<Route.About> { AboutScreen() }
                 },
             )
-            ScaleOverlay(Modifier.align(Alignment.BottomCenter))
         }
     }
 }

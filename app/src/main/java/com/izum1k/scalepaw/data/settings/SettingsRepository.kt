@@ -26,6 +26,8 @@ import java.time.DayOfWeek
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 data class AppearanceSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
@@ -73,17 +75,26 @@ data class ReminderSettings(
     val days: Set<DayOfWeek> = DayOfWeek.entries.toSet(),
 )
 
-data class ScaleSettings(
-    val address: String? = null,
+@Serializable
+data class SavedScale(
+    val address: String,
     val name: String? = null,
     val driverId: String? = null,
     /** The advertisement the scale was paired from, so drivers can re-identify it offline. */
     val snapshot: String? = null,
     /** Link pacing profile name; null follows the driver's default. */
     val tuning: String? = null,
+)
+
+data class ScaleSettings(
+    val devices: List<SavedScale> = emptyList(),
+    /** The only scale a weigh-in connects to. */
+    val activeAddress: String? = null,
     /** Routes the scale to the diagnostic driver, which logs traffic and stores nothing. */
     val developerMode: Boolean = false,
-)
+) {
+    val active: SavedScale? get() = devices.firstOrNull { it.address == activeAddress }
+}
 
 data class AppSettings(
     val currentUserId: Long = 0L,
@@ -138,11 +149,13 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val reminderEnabled = booleanPreferencesKey("reminder_enabled")
         val reminderMinute = intPreferencesKey("reminder_minute")
         val reminderDays = stringSetPreferencesKey("reminder_days")
-        val scaleAddress = stringPreferencesKey("scale_address")
-        val scaleName = stringPreferencesKey("scale_name")
-        val scaleDriver = stringPreferencesKey("scale_driver")
-        val scaleSnapshot = stringPreferencesKey("scale_snapshot")
-        val scaleTuning = stringPreferencesKey("scale_tuning")
+        val scaleDevices = stringPreferencesKey("scale_devices")
+        val scaleActive = stringPreferencesKey("scale_active")
+        val legacyScaleAddress = stringPreferencesKey("scale_address")
+        val legacyScaleName = stringPreferencesKey("scale_name")
+        val legacyScaleDriver = stringPreferencesKey("scale_driver")
+        val legacyScaleSnapshot = stringPreferencesKey("scale_snapshot")
+        val legacyScaleTuning = stringPreferencesKey("scale_tuning")
         val scaleDeveloper = booleanPreferencesKey("scale_developer")
         val haptics = booleanPreferencesKey("haptics")
     }
@@ -197,16 +210,28 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
                 days = p[K.reminderDays]?.mapNotNull { d -> DayOfWeek.entries.firstOrNull { it.name == d } }?.toSet()
                     ?: DayOfWeek.entries.toSet(),
             ),
-            scale = ScaleSettings(
-                address = p[K.scaleAddress],
-                name = p[K.scaleName],
-                driverId = p[K.scaleDriver],
-                snapshot = p[K.scaleSnapshot],
-                tuning = p[K.scaleTuning],
-                developerMode = p[K.scaleDeveloper] ?: false,
-            ),
+            scale = readScale(p),
             hapticsEnabled = p[K.haptics] ?: true,
         )
+    }
+
+    private fun readScale(p: Preferences): ScaleSettings {
+        val developer = p[K.scaleDeveloper] ?: false
+        val encoded = p[K.scaleDevices]
+        if (encoded != null) {
+            val devices = runCatching { json.decodeFromString<List<SavedScale>>(encoded) }.getOrDefault(emptyList())
+            return ScaleSettings(devices, p[K.scaleActive], developer)
+        }
+        // Single-scale settings from before multiple scales; rewritten on the next setScale.
+        val address = p[K.legacyScaleAddress] ?: return ScaleSettings(developerMode = developer)
+        val legacy = SavedScale(
+            address = address,
+            name = p[K.legacyScaleName],
+            driverId = p[K.legacyScaleDriver],
+            snapshot = p[K.legacyScaleSnapshot],
+            tuning = p[K.legacyScaleTuning],
+        )
+        return ScaleSettings(listOf(legacy), address, developer)
     }
 
     suspend fun current(): AppSettings = settings.first()
@@ -271,14 +296,21 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         it[K.reminderDays] = r.days.map { d -> d.name }.toSet()
     }
 
-    suspend fun setScale(s: ScaleSettings) = edit {
-        it.setOrRemove(K.scaleAddress, s.address)
-        it.setOrRemove(K.scaleName, s.name)
-        it.setOrRemove(K.scaleDriver, s.driverId)
-        it.setOrRemove(K.scaleSnapshot, s.snapshot)
-        it.setOrRemove(K.scaleTuning, s.tuning)
-        it[K.scaleDeveloper] = s.developerMode
+    suspend fun updateScale(transform: (ScaleSettings) -> ScaleSettings) = edit { p ->
+        val s = transform(readScale(p))
+        p[K.scaleDevices] = json.encodeToString(s.devices)
+        p.setOrRemove(K.scaleActive, s.activeAddress?.takeIf { a -> s.devices.any { it.address == a } })
+        p[K.scaleDeveloper] = s.developerMode
+        p.remove(K.legacyScaleAddress)
+        p.remove(K.legacyScaleName)
+        p.remove(K.legacyScaleDriver)
+        p.remove(K.legacyScaleSnapshot)
+        p.remove(K.legacyScaleTuning)
     }
 
     suspend fun setHaptics(enabled: Boolean) = edit { it[K.haptics] = enabled }
+
+    private companion object {
+        val json = Json { ignoreUnknownKeys = true }
+    }
 }
