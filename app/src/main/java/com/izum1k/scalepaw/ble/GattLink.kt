@@ -134,11 +134,23 @@ class GattLink(link: LinkContext, private val tuning: BleGattTuning) : ScaleLink
         }
 
         override fun onCharacteristicWrite(g: BluetoothGatt, ch: BluetoothGattCharacteristic, status: Int) {
-            scope.launch { complete(Kind.WRITE, ch.uuid) }
+            scope.launch {
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    LogManager.w(tag, "Write to ${ch.uuid} failed with status $status")
+                    if (status in AUTH_FAILURES) reportGattFailure(ch.uuid, status)
+                }
+                complete(Kind.WRITE, ch.uuid)
+            }
         }
 
         override fun onDescriptorWrite(g: BluetoothGatt, d: BluetoothGattDescriptor, status: Int) {
-            scope.launch { complete(Kind.NOTIFY, d.characteristic.uuid) }
+            scope.launch {
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    LogManager.w(tag, "Enabling notifications on ${d.characteristic.uuid} failed with status $status")
+                    reportGattFailure(d.characteristic.uuid, status)
+                }
+                complete(Kind.NOTIFY, d.characteristic.uuid)
+            }
         }
 
         override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) {
@@ -186,8 +198,22 @@ class GattLink(link: LinkContext, private val tuning: BleGattTuning) : ScaleLink
             pending = null
             return
         }
-        withTimeoutOrNull(tuning.operationTimeoutMs) { p.done.await() } ?: LogManager.w(tag, "Timeout waiting for $kind on $uuid")
+        val done = withTimeoutOrNull(tuning.operationTimeoutMs) { p.done.await() }
+            ?: if (isBonding()) {
+                // The scale demanded encryption and the system is pairing; the user may be typing a passkey.
+                LogManager.i(tag, "Pairing in progress, waiting for $kind on $uuid")
+                withTimeoutOrNull(PAIRING_TIMEOUT_MS) { p.done.await() }
+            } else {
+                null
+            }
+        if (done == null) LogManager.w(tag, "Timeout waiting for $kind on $uuid")
         if (pending === p) pending = null
+    }
+
+    private fun isBonding(): Boolean = gatt?.device?.bondState == BluetoothDevice.BOND_BONDING
+
+    private fun reportGattFailure(uuid: UUID, status: Int) {
+        link.callbacks.onError(R.string.ble_error_gatt_status, null, uuid.toString(), status)
     }
 
     private suspend fun gap(ms: Long) {
@@ -274,5 +300,9 @@ class GattLink(link: LinkContext, private val tuning: BleGattTuning) : ScaleLink
         val CCCD: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
         /** Pseudo key for the MTU exchange, which has no characteristic. */
         val MTU: UUID = UUID(0, 0)
+        /** SMP gives up on an unanswered passkey after about 30 s. */
+        const val PAIRING_TIMEOUT_MS = 35_000L
+        /** Insufficient authentication, insufficient encryption, and the stack's generic auth failure. */
+        val AUTH_FAILURES = setOf(0x05, 0x0F, 0x89)
     }
 }

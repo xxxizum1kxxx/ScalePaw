@@ -57,6 +57,8 @@ import com.izum1k.scalepaw.ble.openscale.scales.MGBHandler
 import com.izum1k.scalepaw.ble.openscale.scales.MedisanaBs44xHandler
 import com.izum1k.scalepaw.ble.openscale.scales.MiScaleHandler
 import com.izum1k.scalepaw.ble.openscale.scales.MiScaleS400Handler
+import com.izum1k.scalepaw.ble.withings.WithingsAdvert
+import com.izum1k.scalepaw.ble.withings.WithingsHandler
 import com.izum1k.scalepaw.ble.openscale.scales.OkOkHandler
 import com.izum1k.scalepaw.ble.openscale.scales.RedmondSkybalanceHandler
 import com.izum1k.scalepaw.ble.openscale.scales.OmronWlcHandler
@@ -250,6 +252,8 @@ object ScaleCatalog {
         device("eufy T9147") claimedBy OneByoneHandler::class.java,
         device("eufy T9120") claimedBy OneByoneHandler::class.java,
         device("1byone scale") claimedBy OneByoneNewHandler::class.java,
+        device("Body Smart 4A", WithingsAdvert.serviceUuid(0x10)) claimedBy WithingsHandler::class.java,
+        device("Body+ 4A") claimedBy WithingsHandler::class.java,
         device("XMTZC14HM") claimedBy MiScaleS400Handler::class.java,
         device("MIJIA SCALE S800") claimedBy XiaomiS800Handler::class.java,
         device("Xiaomi Scale S200 3456") claimedBy XiaomiS800Handler::class.java,
@@ -396,8 +400,10 @@ object ScaleCatalog {
     // --- Rendering --------------------------------------------------------------------------
 
     /** Where a handler's source file lives, relative to the repository root. */
-    fun sourcePath(handler: String): String =
-        "app/src/main/java/com/izum1k/scalepaw/ble/openscale/scales/$handler.kt"
+    fun sourcePath(handler: String): String = when (handler) {
+        WithingsHandler::class.java.simpleName -> "app/src/main/java/com/izum1k/scalepaw/ble/withings/$handler.kt"
+        else -> "app/src/main/java/com/izum1k/scalepaw/ble/openscale/scales/$handler.kt"
+    }
 
     private const val SOURCE_BASE_URL = "https://github.com/oliexdev/openScale/blob/master"
 

@@ -37,6 +37,8 @@ private val Credits = listOf(
     Credit("Yoin", "Apache-2.0", "https://github.com/p2o51/Yoin", R.string.credit_yoin),
     Credit("PiliPaw", "GPL-3.0", "https://github.com/p2o51/PiliPaw", R.string.credit_pilipaw),
     Credit("Xiaomi-cloud-tokens-extractor", "MIT", "https://github.com/PiotrMachowski/Xiaomi-cloud-tokens-extractor", R.string.credit_micloud),
+    Credit("withings-local", "MIT", "https://github.com/pierosavi/withings-local", R.string.credit_withings),
+    Credit("openwithings", "MIT", "https://github.com/totruok/openwithings", R.string.credit_withings),
     Credit("material-color-utilities", "Apache-2.0", "https://github.com/material-foundation/material-color-utilities", R.string.credit_mcu),
     Credit("Google Sans Flex", "OFL-1.1", "https://fonts.google.com/specimen/Google+Sans+Flex", R.string.credit_font),
 )

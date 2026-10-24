@@ -141,4 +141,53 @@
     <string name="qardio_section_scale">体重秤设置</string>
     <string name="s400_bmr_formula_cun80">Cunningham 1980</string>
     <string name="s400_bmr_formula_cun91">Cunningham 1991</string>
+
+    <string name="ble_experimental_label">%1$s（试验性）</string>
+    <string name="ble_error_gatt_status">向 %1$s 写入蓝牙数据失败，状态码 %2$d。</string>
+    <string name="weigh_wait_for_advert">请站上体重秤，或按住秤上的按钮 3 秒。之后大约一分钟内体重秤才接受连接。</string>
+    <string name="credit_withings">Withings 蓝牙协议资料（独立实现）</string>
+
+    <string name="withings_experimental_warning">试验性驱动。只读取秤上存储的测量记录，不会删除秤上的任何数据，也不会修改 Wi-Fi 或账号设置。与 Withings 公司无关。遇到问题请复制下方的诊断信息，并参阅 docs/withings-debug.zh-CN.md。</string>
+    <string name="withings_kl_description">体重秤只和知道其 32 位账号密钥（kl）的应用通信。请在上方登录 Withings 账号，或粘贴已有的密钥。</string>
+    <string name="withings_kl_label">账号密钥（kl）</string>
+    <string name="withings_kl_error">密钥必须是 32 个可打印字符</string>
+    <string name="withings_time_set">同步体重秤时钟</string>
+    <string name="withings_time_set_summary">每次连接时设置体重秤的时间和时区，让新记录的时间戳正确</string>
+    <string name="withings_diagnostics">上次会话</string>
+    <string name="withings_diagnostics_empty">还没有失败的会话记录。</string>
+    <string name="withings_diagnostics_copy">复制诊断信息</string>
+    <string name="withings_diagnostics_copied">已复制</string>
+
+    <string name="withings_missing_key">这台 Withings 体重秤需要账号密钥。请打开蓝牙设置，登录 Withings 或粘贴密钥。</string>
+    <string name="withings_error_no_characteristic">体重秤没有提供 Withings 数据通道。它可能仍处于设置模式，或使用了此驱动不认识的协议。</string>
+    <string name="withings_error_timeout">体重秤停止响应。请重新站上去，并让手机靠近体重秤。</string>
+    <string name="withings_clock_unset">体重秤时钟未设置，部分记录已跳过。请保持“同步体重秤时钟”开启。</string>
+    <string name="withings_no_new">已连接，但体重秤上没有新记录。</string>
+    <string name="withings_setup_mode">体重秤处于设置模式。请先在 Withings App 中完成设置，再重新称重。</string>
+    <string name="withings_error_unverified">体重秤无法证明它知道账号密钥。请确认密钥属于这台体重秤。</string>
+    <string name="withings_error_key">体重秤拒绝了账号密钥。请重新登录以获取当前密钥。</string>
+    <string name="withings_error_not_authenticated">认证完成前，体重秤拒绝了请求。</string>
+    <string name="withings_error_command">体重秤对命令 %1$d 返回错误 %2$d。</string>
+    <string name="withings_error_malformed">体重秤发送了此驱动无法解析的消息：%1$s</string>
+
+    <string name="withings_entry">从 Withings 获取密钥</string>
+    <string name="withings_entry_summary">登录 Withings 账号，自动填入账号密钥</string>
+    <string name="withings_key_title">Withings 账号密钥</string>
+    <string name="withings_privacy_title">隐私</string>
+    <string name="withings_privacy">邮箱和密码只会发送到 Withings 服务器，用于读取体重秤的密钥，读取后立即退出登录。ScalePaw 只保存密钥本身。</string>
+    <string name="withings_account_title">账号类型</string>
+    <string name="withings_account_hint">仅支持邮箱加密码的账号。使用 Apple 或 Google 登录、或开启了两步验证的账号，需要手动粘贴密钥。</string>
+    <string name="withings_email">邮箱</string>
+    <string name="withings_password">密码</string>
+    <string name="withings_sign_in">登录</string>
+    <string name="withings_devices">此账号下的设备</string>
+    <string name="withings_no_devices">此账号下没有带密钥的设备</string>
+    <string name="withings_match">当前体重秤</string>
+    <string name="withings_no_key">无密钥</string>
+    <string name="withings_restart">重新登录</string>
+    <string name="withings_error_credentials">登录失败，请检查邮箱和密码（状态码 %1$s）。</string>
+    <string name="withings_error_session">Withings 没有建立会话，可能开启了两步验证或使用 Apple / Google 登录，请改为手动粘贴密钥。</string>
+    <string name="withings_error_unexpected">Withings 返回了意外的结果，请稍后再试。</string>
+    <string name="withings_error_network">无法连接 Withings：%1$s</string>
+    <string name="withings_error_apply">这台体重秤不需要 Withings 密钥。</string>
 </resources>

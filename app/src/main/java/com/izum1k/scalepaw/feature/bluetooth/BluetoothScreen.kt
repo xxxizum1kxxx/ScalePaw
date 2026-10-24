@@ -50,6 +50,7 @@ import com.gpo.yoin.symbols.YoinSymbols
 import com.izum1k.scalepaw.R
 import com.izum1k.scalepaw.ble.DiscoveredScale
 import com.izum1k.scalepaw.ble.MiCloudKeys
+import com.izum1k.scalepaw.ble.WithingsKeys
 import com.izum1k.scalepaw.ble.openscale.scales.DeviceSupport
 import com.izum1k.scalepaw.ble.openscale.scales.LinkMode
 import com.izum1k.scalepaw.ble.openscale.scales.TuningProfile
@@ -123,6 +124,19 @@ fun BluetoothScreen() {
                                 onClick = {
                                     haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
                                     nav.push(Route.MiCloudKey(active.address))
+                                },
+                            ) {
+                                Icon(YoinSymbols.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        if (active != null && WithingsKeys.settingKey(configHandler) != null) {
+                            SettingRow(
+                                title = stringResource(R.string.withings_entry),
+                                value = stringResource(R.string.withings_entry_summary),
+                                icon = YoinSymbols.Cloud,
+                                onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
+                                    nav.push(Route.WithingsKey(active.address))
                                 },
                             ) {
                                 Icon(YoinSymbols.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -240,7 +254,7 @@ private fun ActiveCard(active: SavedScale?, support: DeviceSupport?) {
                     )
                     Text(
                         if (active != null) {
-                            support?.displayName ?: stringResource(R.string.ble_unsupported)
+                            supportLabel(support)
                         } else {
                             stringResource(R.string.ble_search_hint)
                         },
@@ -285,7 +299,7 @@ private fun SavedScaleBlock(
     Column(Modifier.background(container)) {
         SettingRow(
             title = saved.name ?: saved.address,
-            value = listOfNotNull(support?.displayName ?: stringResource(R.string.ble_unsupported), saved.address).joinToString("\n"),
+            value = listOf(supportLabel(support), saved.address).joinToString("\n"),
             icon = ScaleSymbols.Scale,
             onClick = onActivate,
         ) {
@@ -337,6 +351,13 @@ private fun SavedScaleBlock(
 }
 
 @Composable
+private fun supportLabel(support: DeviceSupport?): String = when {
+    support == null -> stringResource(R.string.ble_unsupported)
+    support.experimental -> stringResource(R.string.ble_experimental_label, support.displayName)
+    else -> support.displayName
+}
+
+@Composable
 private fun DeviceRow(
     device: DiscoveredScale,
     saved: Boolean,
@@ -370,7 +391,7 @@ private fun DeviceRow(
             )
             Text(
                 listOfNotNull(
-                    device.support?.displayName ?: stringResource(R.string.ble_unsupported),
+                    supportLabel(device.support),
                     stringResource(R.string.ble_saved).takeIf { saved },
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.bodyMedium,

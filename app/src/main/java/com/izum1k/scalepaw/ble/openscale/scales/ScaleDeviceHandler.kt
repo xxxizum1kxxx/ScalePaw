@@ -46,13 +46,17 @@ import kotlin.math.min
  * @property implemented  Features this handler actually implements today (may be a subset).
  * @property tuningProfile Optional link timing/retry preferences (see [TuningProfile]).
  * @property linkMode     Whether the device uses GATT or broadcast-only advertisements.
+ * @property experimental The driver is untested on real hardware; the UI labels it as such.
+ * @property findTimeoutMs How long to scan for the scale before connecting, when the default is too short.
  */
 data class DeviceSupport(
     val displayName: String,
     val capabilities: Set<DeviceCapability>,
     val implemented: Set<DeviceCapability>,
     val tuningProfile: TuningProfile = TuningProfile.Balanced,
-    val linkMode: LinkMode = LinkMode.CONNECT_GATT
+    val linkMode: LinkMode = LinkMode.CONNECT_GATT,
+    val experimental: Boolean = false,
+    val findTimeoutMs: Long? = null,
 )
 
 /** High-level capabilities a scale might offer. */

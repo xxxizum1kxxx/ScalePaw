@@ -255,6 +255,17 @@ class ScaleManager(
         return true
     }
 
+    /** Stores a Withings account `kl` for the saved scale at [address]; false when its driver takes none. */
+    suspend fun applyWithingsKey(address: String, key: String): Boolean {
+        val saved = settings.current().scale.devices.firstOrNull { it.address == address } ?: return false
+        val handler = ScaleFactory.resolve(savedDevice(saved))?.first ?: return false
+        val setting = WithingsKeys.settingKey(handler) ?: return false
+        if (!WithingsKeys.isValid(key)) return false
+        drivers.forHandler(address, handler).putString(setting, key)
+        _driverRevision.update { it + 1 }
+        return true
+    }
+
     // ── Presence ───────────────────────────────────────────────────────────
 
     /**
@@ -414,7 +425,8 @@ class ScaleManager(
             var device: BluetoothDevice? = null
             if (support.linkMode == LinkMode.CONNECT_GATT) {
                 _status.value = ScaleStatus.Scanning
-                device = scanner.find(info.address, FIND_TIMEOUT_MS)?.device
+                if (support.findTimeoutMs != null) _weigh.update { it.copy(hint = context.getString(R.string.weigh_wait_for_advert)) }
+                device = scanner.find(info.address, support.findTimeoutMs ?: FIND_TIMEOUT_MS)?.device
             }
             val created = when (support.linkMode) {
                 LinkMode.CONNECT_GATT -> GattLink(linkContext, tuning.forGatt())

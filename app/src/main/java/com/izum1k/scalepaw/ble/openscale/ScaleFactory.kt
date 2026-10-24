@@ -88,6 +88,7 @@ import com.izum1k.scalepaw.ble.openscale.scales.XiaomiS800Handler
 import com.izum1k.scalepaw.ble.openscale.scales.YunmaiHandler
 import com.izum1k.scalepaw.ble.openscale.scales.YunmaiXHandler
 import com.izum1k.scalepaw.ble.openscale.scales.ScaleDeviceHandler
+import com.izum1k.scalepaw.ble.withings.WithingsHandler
 
 /** The driver registry: which handler claims a scanned device. */
 object ScaleFactory {
@@ -98,6 +99,7 @@ object ScaleFactory {
      * MGBHandler matches on its own.
      */
     fun createHandlers(): List<ScaleDeviceHandler> = listOf(
+        WithingsHandler(),
         AndUC352BLEHandler(),
         HealthKeep280Handler(),
         PicoocHandler(),

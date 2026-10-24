@@ -141,4 +141,53 @@
     <string name="tuning_aggressive">Aggressive</string>
     <string name="tuning_balanced">Balanced</string>
     <string name="tuning_conservative">Conservative</string>
+
+    <string name="ble_experimental_label">%1$s (experimental)</string>
+    <string name="ble_error_gatt_status">Bluetooth write to %1$s failed with status %2$d.</string>
+    <string name="weigh_wait_for_advert">Step on the scale, or hold its button for 3 seconds. It only accepts connections for about a minute afterwards.</string>
+    <string name="credit_withings">Withings Bluetooth protocol notes (independent implementation)</string>
+
+    <string name="withings_experimental_warning">Experimental driver. It only reads stored measurements and never deletes anything from the scale or changes its Wi-Fi or account setup. It is not affiliated with Withings. If something goes wrong, copy the diagnostics below and see docs/withings-debug.md.</string>
+    <string name="withings_kl_description">The scale only talks to apps that know its 32-character account key (kl). Sign in with your Withings account above, or paste a key you already have.</string>
+    <string name="withings_kl_label">Account key (kl)</string>
+    <string name="withings_kl_error">The key must be 32 printable characters</string>
+    <string name="withings_time_set">Sync the scale clock</string>
+    <string name="withings_time_set_summary">Sets the scale\'s time and time zone on each connection so new readings get the right timestamp</string>
+    <string name="withings_diagnostics">Last session</string>
+    <string name="withings_diagnostics_empty">No failed session recorded yet.</string>
+    <string name="withings_diagnostics_copy">Copy diagnostics</string>
+    <string name="withings_diagnostics_copied">Copied</string>
+
+    <string name="withings_missing_key">This Withings scale needs its account key. Open Bluetooth settings and sign in with Withings, or paste the key.</string>
+    <string name="withings_error_no_characteristic">The scale does not expose the Withings data channel. It may still be in setup mode or use a protocol this driver does not know.</string>
+    <string name="withings_error_timeout">The scale stopped answering. Step on it again and keep the phone close.</string>
+    <string name="withings_clock_unset">Some readings were skipped because the scale\'s clock was not set. Keep \"Sync the scale clock\" on.</string>
+    <string name="withings_no_new">Connected, but there are no new readings on the scale.</string>
+    <string name="withings_setup_mode">The scale is in setup mode. Finish setting it up in the Withings app first, then weigh in again.</string>
+    <string name="withings_error_unverified">The scale could not prove it knows the account key. Check that the key belongs to this scale.</string>
+    <string name="withings_error_key">The scale rejected the account key. Sign in again to fetch the current key.</string>
+    <string name="withings_error_not_authenticated">The scale refused the request before authentication finished.</string>
+    <string name="withings_error_command">The scale returned error %2$d for command %1$d.</string>
+    <string name="withings_error_malformed">The scale sent a message this driver could not read: %1$s</string>
+
+    <string name="withings_entry">Get key from Withings</string>
+    <string name="withings_entry_summary">Sign in to your Withings account to fill in the account key</string>
+    <string name="withings_key_title">Withings account key</string>
+    <string name="withings_privacy_title">Privacy</string>
+    <string name="withings_privacy">Your email and password are only sent to Withings\' servers to read the scale\'s key, and the session is signed out right away. ScalePaw keeps the key and nothing else.</string>
+    <string name="withings_account_title">Account type</string>
+    <string name="withings_account_hint">Only email and password accounts work. Accounts that sign in with Apple or Google, or that use two-step verification, need the key pasted by hand.</string>
+    <string name="withings_email">Email</string>
+    <string name="withings_password">Password</string>
+    <string name="withings_sign_in">Sign in</string>
+    <string name="withings_devices">Devices on this account</string>
+    <string name="withings_no_devices">No devices with a key on this account</string>
+    <string name="withings_match">This scale</string>
+    <string name="withings_no_key">No key</string>
+    <string name="withings_restart">Sign in again</string>
+    <string name="withings_error_credentials">Sign-in failed. Check your email and password (status %1$s).</string>
+    <string name="withings_error_session">Withings did not open a session. Two-step verification or Apple or Google sign-in is probably on; paste the key by hand instead.</string>
+    <string name="withings_error_unexpected">Withings answered in an unexpected way. Try again later.</string>
+    <string name="withings_error_network">Could not reach Withings: %1$s</string>
+    <string name="withings_error_apply">This scale does not take a Withings key.</string>
 </resources>
