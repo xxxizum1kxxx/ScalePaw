@@ -5,8 +5,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.gpo.scalepaw.ui.navigation.AppNavHost
@@ -31,7 +35,13 @@ class MainActivity : ComponentActivity() {
                 ApplySystemBars(window, isDark(state.settings.appearance))
                 val backStack = rememberNavBackStack(*listOfNotNull(Route.Main, startRoute).toTypedArray())
                 val navigator = remember(backStack) { Navigator(backStack) }
-                AppNavHost(navigator)
+                val haptics = LocalHapticFeedback.current
+                val feedback = remember(haptics, state.settings.hapticsEnabled) {
+                    if (state.settings.hapticsEnabled) haptics else SilentHaptics
+                }
+                CompositionLocalProvider(LocalHapticFeedback provides feedback) {
+                    AppNavHost(navigator)
+                }
             }
         }
     }
@@ -44,4 +54,8 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val ACTION_ADD = "com.gpo.scalepaw.action.ADD_MEASUREMENT"
     }
+}
+
+private object SilentHaptics : HapticFeedback {
+    override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) = Unit
 }

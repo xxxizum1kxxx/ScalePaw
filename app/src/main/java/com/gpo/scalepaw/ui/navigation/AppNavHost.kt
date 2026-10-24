@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import com.gpo.scalepaw.feature.about.AboutScreen
 import com.gpo.scalepaw.feature.bluetooth.BluetoothScreen
@@ -39,12 +40,15 @@ import com.gpo.scalepaw.feature.settings.SettingsScreen
 import com.gpo.scalepaw.feature.table.PeriodEntriesScreen
 import com.gpo.scalepaw.feature.users.UserEditScreen
 import com.gpo.scalepaw.feature.users.UserSettingsScreen
+import com.gpo.scalepaw.ui.component.WidthClass
+import com.gpo.scalepaw.ui.component.widthClass
 import com.gpo.scalepaw.ui.shell.MainShell
 import com.gpo.scalepaw.ui.theme.YoinMotion
 
 /**
  * One NavDisplay for the whole app. Pushes slide in like the platform's page transition; the
  * system back gesture drives NavDisplay's predictive pop (the page shrinks and follows the finger).
+ * On expanded windows a measurement opens beside the shell instead of covering it.
  */
 @Composable
 fun AppNavHost(navigator: Navigator) {
@@ -55,6 +59,7 @@ fun AppNavHost(navigator: Navigator) {
         fastEffects = YoinMotion.fastEffectsSpec(),
         scale = YoinMotion.defaultSpatialSpec(),
     )
+    val wide = widthClass() == WidthClass.Expanded
     CompositionLocalProvider(LocalNavigator provides navigator) {
         Box(Modifier.fillMaxSize()) {
             NavDisplay(
@@ -70,10 +75,11 @@ fun AppNavHost(navigator: Navigator) {
                 transitionSpec = { motion.push() },
                 popTransitionSpec = { motion.pop() },
                 predictivePopTransitionSpec = { motion.pop() },
+                sceneStrategies = listOf(ListDetailSceneStrategy(wide), SinglePaneSceneStrategy()),
                 entryProvider = entryProvider {
-                    entry<Route.Main> { MainShell() }
+                    entry<Route.Main>(metadata = ListPane) { MainShell() }
                     entry<Route.MeasurementEdit> { MeasurementEditScreen(it.id) }
-                    entry<Route.MeasurementDetail> { MeasurementDetailScreen(it.id) }
+                    entry<Route.MeasurementDetail>(metadata = DetailPane) { MeasurementDetailScreen(it.id) }
                     entry<Route.PeriodEntries> { PeriodEntriesScreen(it.start, it.endExclusive) }
                     entry<Route.Comparison> { ComparisonScreen(it.start, it.end) }
                     entry<Route.Settings> { SettingsScreen() }

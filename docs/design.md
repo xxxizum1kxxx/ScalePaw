@@ -10,7 +10,8 @@ ScalePaw follows the Yoin design language (see Yoin's `docs/design.md`) and Pili
 4. **Colour blocks, not strokes.** No dividers or outlined cards. Groups are `surfaceContainer*` blocks with `YoinContainerShapes.Card`; rows inside a group use `ListRow` corners with 2dp gaps.
 5. **Typography** is always `MaterialTheme.typography.*` in Google Sans Flex. Numbers that matter (current weight, a metric's value) use display or headline sizes with tabular figures; units sit beside them in a smaller, muted style.
 6. **Copy is labels.** Short nouns, no narration, no encouragement. Explanations only where a choice has consequences (deleting, restoring, pairing).
-7. **Haptics** accompany every toggle, selection, chart scrub tick, save and delete.
+7. **Haptics** accompany every toggle, selection, chart scrub tick, save and delete. The General setting silences them all by swapping `LocalHapticFeedback` at the root.
+8. **Three width tiers** (`widthClass()`, read from the enclosing pane via `LocalLayoutWidth`). Content caps at reading width; grids reflow by width. On expanded windows `ListDetailSceneStrategy` opens a measurement beside the shell instead of covering it.
 
 ## Screens
 

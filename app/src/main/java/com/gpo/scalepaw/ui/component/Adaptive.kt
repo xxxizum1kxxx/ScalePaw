@@ -10,13 +10,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 
 /** Yoin's three layout tiers (Compact < 600 ≤ Medium < 840 ≤ Expanded). */
 enum class WidthClass { Compact, Medium, Expanded }
 
+/** Width of the pane a page is laid out in; unspecified means the whole window. */
+val LocalLayoutWidth = staticCompositionLocalOf { Dp.Unspecified }
+
 @Composable
 fun widthClass(): WidthClass {
-    val w = LocalConfiguration.current.screenWidthDp
+    val pane = LocalLayoutWidth.current
+    val w = if (pane.isSpecified) pane.value.toInt() else LocalConfiguration.current.screenWidthDp
     return when {
         w < 600 -> WidthClass.Compact
         w < 840 -> WidthClass.Medium
