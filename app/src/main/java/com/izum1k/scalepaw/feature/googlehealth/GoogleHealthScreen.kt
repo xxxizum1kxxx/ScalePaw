@@ -267,25 +267,7 @@ fun GoogleHealthScreen() {
 private const val CONSOLE_URL = "https://console.cloud.google.com/apis/library/health.googleapis.com"
 
 @Composable
-private fun errorText(error: GoogleHealthError, detail: String?): String {
-    val base = stringResource(
-        when (error) {
-            GoogleHealthError.NOT_CONFIGURED -> R.string.google_health_error_not_configured
-            GoogleHealthError.NOT_CONNECTED -> R.string.google_health_error_not_connected
-            GoogleHealthError.CANCELLED -> R.string.google_health_error_cancelled
-            GoogleHealthError.DENIED -> R.string.google_health_error_denied
-            GoogleHealthError.TIMEOUT -> R.string.google_health_error_timeout
-            GoogleHealthError.ACCOUNT_NOT_LINKED -> R.string.google_health_error_not_linked
-            GoogleHealthError.REAUTH -> R.string.google_health_error_reauth
-            GoogleHealthError.NETWORK -> R.string.google_health_error_network
-            GoogleHealthError.RATE_LIMITED -> R.string.google_health_error_rate_limited
-            GoogleHealthError.SERVER -> R.string.google_health_error_server
-            GoogleHealthError.FAILED -> R.string.google_health_error_failed
-        },
-    )
-    val showDetail = detail != null && (error == GoogleHealthError.FAILED || error == GoogleHealthError.SERVER)
-    return if (showDetail) "$base\n$detail" else base
-}
+private fun errorText(error: GoogleHealthError, detail: String?): String = LocalContext.current.googleHealthErrorText(error, detail)
 
 @Composable
 private fun ErrorBlock(text: String) {

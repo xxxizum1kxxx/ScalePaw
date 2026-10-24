@@ -10,9 +10,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 enum class GoogleHealthBusy { CONNECTING, SYNCING, DISCONNECTING }
@@ -21,10 +24,11 @@ class GoogleHealthViewModel(private val container: AppContainer) : ViewModel() {
     private val health = container.googleHealth
     val state: StateFlow<GoogleHealthState> = health.store.state
 
-    private val _busy = MutableStateFlow<GoogleHealthBusy?>(null)
-    val busy: StateFlow<GoogleHealthBusy?> = _busy.asStateFlow()
+    private val action = MutableStateFlow<GoogleHealthBusy?>(null)
+    val busy: StateFlow<GoogleHealthBusy?> = combine(action, health.syncing) { a, syncing -> a ?: GoogleHealthBusy.SYNCING.takeIf { syncing } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    /** Failures of user-started actions; sync failures are kept in [state] instead. */
+    /** Failures of connect and disconnect; sync failures are kept in [state] instead. */
     private val _error = MutableStateFlow<GoogleHealthException?>(null)
     val error: StateFlow<GoogleHealthException?> = _error.asStateFlow()
 
@@ -47,24 +51,24 @@ class GoogleHealthViewModel(private val container: AppContainer) : ViewModel() {
 
     fun cancel() {
         job?.cancel()
-        _busy.value = null
+        action.value = null
     }
 
     fun disconnect(deleteRemote: Boolean) = run(GoogleHealthBusy.DISCONNECTING) { health.disconnect(deleteRemote) }
 
-    fun syncNow() = run(GoogleHealthBusy.SYNCING) { health.sync() }
+    fun syncNow() {
+        health.requestSync()
+    }
 
-    fun resyncAll() = run(GoogleHealthBusy.SYNCING) { health.resyncAll() }
+    fun resyncAll() {
+        health.requestSync(everything = true)
+    }
 
     fun setLinkedUser(id: Long) = health.setLinkedUser(id)
 
-    fun dismissError() {
-        _error.value = null
-    }
-
     private fun run(kind: GoogleHealthBusy, block: suspend () -> Unit) {
-        if (_busy.value != null) return
-        _busy.value = kind
+        if (busy.value != null) return
+        action.value = kind
         _error.value = null
         job = viewModelScope.launch {
             try {
@@ -72,11 +76,11 @@ class GoogleHealthViewModel(private val container: AppContainer) : ViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: GoogleHealthException) {
-                if (kind != GoogleHealthBusy.SYNCING) _error.value = e
+                _error.value = e
             } catch (e: Exception) {
                 _error.value = GoogleHealthException(GoogleHealthError.FAILED, e.message ?: e.javaClass.simpleName)
             } finally {
-                _busy.value = null
+                action.value = null
             }
         }
     }

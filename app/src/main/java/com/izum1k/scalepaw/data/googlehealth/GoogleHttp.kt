@@ -24,9 +24,7 @@ enum class GoogleHealthError {
     FAILED,
 }
 
-class GoogleHealthException(val error: GoogleHealthError, detail: String? = null) : Exception(detail ?: error.name) {
-    val retryable: Boolean get() = error == GoogleHealthError.NETWORK || error == GoogleHealthError.RATE_LIMITED || error == GoogleHealthError.SERVER
-}
+class GoogleHealthException(val error: GoogleHealthError, detail: String? = null) : Exception(detail ?: error.name)
 
 internal class HttpResult(val code: Int, val text: String) {
     val ok: Boolean get() = code in 200..299

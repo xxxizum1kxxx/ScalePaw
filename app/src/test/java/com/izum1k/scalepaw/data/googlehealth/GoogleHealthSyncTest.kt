@@ -68,8 +68,18 @@ class GoogleHealthSyncTest {
     fun should_skip_when_point_unchanged() = runTest {
         reconciler.reconcile(listOf(weight(1, 80000)))
         remote.calls.clear()
-        reconciler.reconcile(listOf(weight(1, 80000)))
+        val outcome = reconciler.reconcile(listOf(weight(1, 80000)))
         assertTrue(remote.calls.isEmpty())
+        assertEquals(HealthReconciler.Outcome(created = 0, updated = 0, deleted = 0, unchanged = 1), outcome)
+    }
+
+    @Test
+    fun should_push_only_new_point_when_one_measurement_added() = runTest {
+        reconciler.reconcile(listOf(weight(1, 80000), weight(2, 81000)))
+        remote.calls.clear()
+        val outcome = reconciler.reconcile(listOf(weight(1, 80000), weight(2, 81000), weight(3, 82000)))
+        assertEquals(listOf("create sp-3-w"), remote.calls)
+        assertEquals(2, outcome.unchanged)
     }
 
     @Test

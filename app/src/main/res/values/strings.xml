@@ -492,8 +492,10 @@
     <string name="google_health_error_timeout">Sign-in timed out. Try again.</string>
     <string name="google_health_error_not_linked">This Google account has no Google Health profile yet. Open the Google Health app, sign in with it, then connect again.</string>
     <string name="google_health_error_reauth">Sign-in expired. Reconnect Google Health.</string>
-    <string name="google_health_error_network">Network unavailable. Sync retries automatically.</string>
-    <string name="google_health_error_rate_limited">Google Health is rate limiting. Sync retries automatically.</string>
+    <string name="google_health_error_network">Network unavailable. Try again later.</string>
+    <string name="google_health_error_rate_limited">Too many requests to Google Health. Try again in a minute.</string>
+    <string name="google_health_sync_nothing">Nothing new to push</string>
+    <string name="google_health_sync_result">Pushed to Google Health: %1$d new, %2$d updated, %3$d removed</string>
     <string name="google_health_error_server">Google Health is unavailable right now.</string>
     <string name="google_health_error_failed">Google Health rejected the request.</string>
 </resources>

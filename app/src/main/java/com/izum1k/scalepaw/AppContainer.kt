@@ -26,5 +26,5 @@ class AppContainer(context: Context) {
     val csv: CsvTransfer by lazy { CsvTransfer(repository) }
     val backup: BackupManager by lazy { BackupManager(app, database, settings) }
     val scales: ScaleManager by lazy { ScaleManager(app, repository, settings, appScope) }
-    val googleHealth: GoogleHealth by lazy { GoogleHealth(app, repository) }
+    val googleHealth: GoogleHealth by lazy { GoogleHealth(app, repository, appScope) }
 }

@@ -124,9 +124,9 @@ private fun Tabs() {
     }
 }
 
-/** Page header of every tab: title, the person being shown, scale status and settings. */
+/** Page header of every tab: title, the person being shown, scale status and settings; [showSync] adds Google Health sync. */
 @Composable
-fun ShellHeader(title: String, modifier: Modifier = Modifier) {
+fun ShellHeader(title: String, modifier: Modifier = Modifier, showSync: Boolean = false) {
     val context = LocalContext.current
     val nav = LocalNavigator.current
     val state by context.container.session.state.collectAsState()
@@ -139,6 +139,7 @@ fun ShellHeader(title: String, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+        if (showSync) GoogleHealthSyncButton()
         ScalePresenceButton()
         state.user?.let { user ->
             IconButton(onClick = { pickUser = true }, shapes = IconButtonDefaults.shapes()) {

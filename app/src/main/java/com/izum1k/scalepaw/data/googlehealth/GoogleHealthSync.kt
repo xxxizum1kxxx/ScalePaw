@@ -1,26 +1,25 @@
 package com.izum1k.scalepaw.data.googlehealth
 
 import android.content.Context
-import androidx.work.BackoffPolicy
-import androidx.work.Constraints
-import androidx.work.CoroutineWorker
-import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.WorkerParameters
-import com.izum1k.scalepaw.container
+import android.util.Log
 import com.izum1k.scalepaw.data.repository.ScaleRepository
 import com.izum1k.scalepaw.domain.HealthPoint
 import com.izum1k.scalepaw.domain.HealthPoints
 import java.security.MessageDigest
-import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /** Brings the remote side in line with [desired], using the ledger to know what was pushed before. */
 class HealthReconciler(private val remote: HealthRemote, private val ledger: HealthLedger) {
-    data class Outcome(val created: Int, val updated: Int, val deleted: Int)
+    data class Outcome(val created: Int, val updated: Int, val deleted: Int, val unchanged: Int) {
+        val changed: Int get() = created + updated + deleted
+    }
 
     suspend fun reconcile(desired: List<HealthPoint>): Outcome {
         val pushed = ledger.load().toMutableMap()
@@ -28,6 +27,7 @@ class HealthReconciler(private val remote: HealthRemote, private val ledger: Hea
         var created = 0
         var updated = 0
         var deleted = 0
+        var unchanged = 0
         try {
             pushed.filterKeys { it !in wanted }.entries.groupBy({ it.value.dataType }, { it.key }).forEach { (dataType, ids) ->
                 remote.delete(dataType, ids)
@@ -38,7 +38,10 @@ class HealthReconciler(private val remote: HealthRemote, private val ledger: Hea
             for (point in desired) {
                 val hash = hash(point.body)
                 val known = pushed[point.id]
-                if (known?.hash == hash) continue
+                if (known?.hash == hash) {
+                    unchanged++
+                    continue
+                }
                 if (known == null) {
                     if (remote.create(point)) created++ else upsertExisting(point).also { updated++ }
                 } else {
@@ -50,7 +53,7 @@ class HealthReconciler(private val remote: HealthRemote, private val ledger: Hea
         } finally {
             ledger.save(pushed)
         }
-        return Outcome(created, updated, deleted)
+        return Outcome(created, updated, deleted, unchanged)
     }
 
     private suspend fun upsertExisting(point: HealthPoint) {
@@ -69,20 +72,29 @@ class HealthReconciler(private val remote: HealthRemote, private val ledger: Hea
     }
 }
 
-/** Everything Google Health: credentials, consent, and pushing the linked user's measurements. */
-class GoogleHealth(private val context: Context, private val repository: ScaleRepository) {
+sealed interface SyncResult {
+    data class Done(val outcome: HealthReconciler.Outcome) : SyncResult
+    data class Failed(val error: GoogleHealthException) : SyncResult
+}
+
+/** Everything Google Health: credentials, consent, and pushing the linked user's measurements on request. */
+class GoogleHealth(context: Context, private val repository: ScaleRepository, private val scope: CoroutineScope) {
     val store = GoogleHealthStore(context)
     val auth = GoogleHealthAuth(store)
     val api = GoogleHealthApi(auth)
     private val reconciler = HealthReconciler(api, store)
-    private val syncing = Mutex()
+
+    private val _syncing = MutableStateFlow(false)
+    val syncing: StateFlow<Boolean> = _syncing.asStateFlow()
+
+    private val _results = MutableSharedFlow<SyncResult>(extraBufferCapacity = 1)
+    val results: SharedFlow<SyncResult> = _results.asSharedFlow()
 
     /** Runs consent in the browser, checks the account can be written to, then links it to [userId]. */
     suspend fun connect(userId: Long, openBrowser: (String) -> Unit) {
         val tokens = auth.authorize(openBrowser)
         api.verify()
         store.connect(tokens.refreshToken!!, tokens.email, userId)
-        GoogleHealthScheduler.enqueue(context)
     }
 
     /** Revokes the grant; with [deleteRemote] the points pushed so far are removed first, best effort. */
@@ -96,56 +108,46 @@ class GoogleHealth(private val context: Context, private val repository: ScaleRe
         store.disconnect()
     }
 
-    fun setLinkedUser(userId: Long) {
-        store.setLinkedUser(userId)
-        GoogleHealthScheduler.enqueue(context)
+    fun setLinkedUser(userId: Long) = store.setLinkedUser(userId)
+
+    /**
+     * Pushes what changed since the last sync; [everything] forgets the ledger first and rewrites every point.
+     * Runs in the app scope so leaving the screen doesn't cancel it. Returns false if a sync is already running.
+     */
+    fun requestSync(everything: Boolean = false): Boolean {
+        if (!_syncing.compareAndSet(expect = false, update = true)) return false
+        scope.launch {
+            try {
+                if (everything) store.save(emptyMap())
+                _results.emit(SyncResult.Done(sync()))
+            } catch (e: GoogleHealthException) {
+                _results.emit(SyncResult.Failed(e))
+            } finally {
+                _syncing.value = false
+            }
+        }
+        return true
     }
 
-    /** Forgets what was pushed and rewrites every point. */
-    suspend fun resyncAll() = syncing.withLock {
-        store.save(emptyMap())
-        syncLocked()
-    }
-
-    suspend fun sync() = syncing.withLock { syncLocked() }
-
-    private suspend fun syncLocked() {
+    private suspend fun sync(): HealthReconciler.Outcome {
         val state = store.state.value
-        if (!state.connected) return
-        val userId = state.linkedUserId ?: return
-        val user = repository.usersNow().firstOrNull { it.id == userId } ?: return
+        if (!state.connected) throw GoogleHealthException(GoogleHealthError.NOT_CONNECTED)
+        val userId = state.linkedUserId ?: throw GoogleHealthException(GoogleHealthError.NOT_CONNECTED)
+        val user = repository.usersNow().firstOrNull { it.id == userId } ?: throw GoogleHealthException(GoogleHealthError.NOT_CONNECTED)
         try {
             val points = HealthPoints.build(user, repository.typesNow(), repository.measurementsNow(userId))
-            reconciler.reconcile(points)
+            val outcome = reconciler.reconcile(points)
+            Log.i(TAG, "sync user=$userId points=${points.size} $outcome")
             store.recordSuccess(System.currentTimeMillis())
+            return outcome
         } catch (e: GoogleHealthException) {
+            Log.w(TAG, "sync failed: ${e.message}")
             store.recordError(e.error.name + (e.message?.takeIf { it != e.error.name }?.let { ": $it" } ?: ""), e.error == GoogleHealthError.REAUTH)
             throw e
         }
     }
-}
-
-object GoogleHealthScheduler {
-    private const val WORK = "google_health_sync"
-
-    fun enqueue(context: Context) {
-        val request = OneTimeWorkRequestBuilder<GoogleHealthSyncWorker>()
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
-            .build()
-        WorkManager.getInstance(context).enqueueUniqueWork(WORK, ExistingWorkPolicy.REPLACE, request)
-    }
-}
-
-class GoogleHealthSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
-    override suspend fun doWork(): Result = try {
-        applicationContext.container.googleHealth.sync()
-        Result.success()
-    } catch (e: GoogleHealthException) {
-        if (e.retryable && runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.failure()
-    }
 
     private companion object {
-        const val MAX_ATTEMPTS = 5
+        const val TAG = "GoogleHealth"
     }
 }

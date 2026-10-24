@@ -64,7 +64,7 @@ fun OverviewScreen() {
     val state by vm.state.collectAsStateWithLifecycle()
     val nav = LocalNavigator.current
     Column(Modifier.fillMaxSize()) {
-        ShellHeader(stringResource(R.string.tab_overview))
+        ShellHeader(stringResource(R.string.tab_overview), showSync = true)
         when {
             !state.loaded -> LoadingState()
             state.latest == null -> EmptyState(ScaleSymbols.Scale, stringResource(R.string.overview_empty))

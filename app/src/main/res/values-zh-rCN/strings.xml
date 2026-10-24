@@ -483,8 +483,10 @@
     <string name="google_health_error_timeout">登录超时，请重试。</string>
     <string name="google_health_error_not_linked">这个 Google 账号还没有 Google Health 档案。请先用它登录 Google Health App，再重新连接。</string>
     <string name="google_health_error_reauth">登录已过期，请重新连接 Google Health。</string>
-    <string name="google_health_error_network">网络不可用，会自动重试同步。</string>
-    <string name="google_health_error_rate_limited">Google Health 请求过于频繁，会自动重试同步。</string>
+    <string name="google_health_error_network">网络不可用，请稍后再试。</string>
+    <string name="google_health_error_rate_limited">Google Health 请求过于频繁，请一分钟后再试。</string>
+    <string name="google_health_sync_nothing">没有需要推送的新记录</string>
+    <string name="google_health_sync_result">已推送到 Google Health：新增 %1$d，更新 %2$d，删除 %3$d</string>
     <string name="google_health_error_server">Google Health 暂时不可用。</string>
     <string name="google_health_error_failed">Google Health 拒绝了请求。</string>
 </resources>
