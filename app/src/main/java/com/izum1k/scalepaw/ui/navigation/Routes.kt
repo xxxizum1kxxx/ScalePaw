@@ -36,6 +36,7 @@ sealed interface Route : NavKey {
 
     /** Fetches the Xiaomi cloud bind key for the saved scale at [address]. */
     @Serializable data class MiCloudKey(val address: String) : Route
+    @Serializable data object SettingsGoogleHealth : Route
     @Serializable data object SettingsReminder : Route
     @Serializable data object SettingsGoals : Route
     @Serializable data object About : Route

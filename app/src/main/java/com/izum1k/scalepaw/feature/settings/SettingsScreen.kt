@@ -34,6 +34,7 @@ fun SettingsScreen() {
                 SettingRow(stringResource(R.string.bluetooth), value = stringResource(R.string.settings_bluetooth_summary), icon = ScaleSymbols.Bluetooth, onClick = { nav.push(Route.SettingsBluetooth) })
                 SettingRow(stringResource(R.string.settings_reminder), value = stringResource(R.string.settings_reminder_summary), icon = PiliSymbols.Bell, onClick = { nav.push(Route.SettingsReminder) })
                 SettingRow(stringResource(R.string.settings_data), value = stringResource(R.string.settings_data_summary), icon = YoinSymbols.Storage, onClick = { nav.push(Route.SettingsData) })
+                SettingRow(stringResource(R.string.google_health), value = stringResource(R.string.google_health_summary), icon = YoinSymbols.Cloud, onClick = { nav.push(Route.SettingsGoogleHealth) })
             }
         }
         item {

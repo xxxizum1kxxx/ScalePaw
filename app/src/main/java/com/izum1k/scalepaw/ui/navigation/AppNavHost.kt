@@ -27,6 +27,7 @@ import com.izum1k.scalepaw.feature.bluetooth.BluetoothScreen
 import com.izum1k.scalepaw.feature.compare.ComparisonScreen
 import com.izum1k.scalepaw.feature.data.DataSettingsScreen
 import com.izum1k.scalepaw.feature.goals.GoalsScreen
+import com.izum1k.scalepaw.feature.googlehealth.GoogleHealthScreen
 import com.izum1k.scalepaw.feature.measurement.MeasurementDetailScreen
 import com.izum1k.scalepaw.feature.measurement.MeasurementEditScreen
 import com.izum1k.scalepaw.feature.metrics.MetricEditScreen
@@ -93,6 +94,7 @@ fun AppNavHost(navigator: Navigator) {
                     entry<Route.SettingsData> { DataSettingsScreen() }
                     entry<Route.SettingsBluetooth> { BluetoothScreen() }
                     entry<Route.MiCloudKey> { MiCloudKeyScreen(it.address) }
+                    entry<Route.SettingsGoogleHealth> { GoogleHealthScreen() }
                     entry<Route.SettingsReminder> { ReminderSettingsScreen() }
                     entry<Route.SettingsGoals> { GoalsScreen() }
                     entry<Route.About> { AboutScreen() }

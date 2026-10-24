@@ -15,7 +15,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <!-- Only used to fetch BLE bind keys from the Xiaomi cloud when the user asks for it. -->
+    <!-- Only used for Xiaomi cloud bind keys and Google Health sync, both opt-in. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
@@ -45,6 +45,20 @@
             android:name=".feature.micloud.MiCloudLoginActivity"
             android:exported="false"
             android:theme="@android:style/Theme.DeviceDefault.DayNight" />
+
+        <activity
+            android:name=".feature.googlehealth.GoogleHealthReturnActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="scalepaw" android:host="google-health" />
+            </intent-filter>
+        </activity>
 
         <receiver
             android:name=".feature.reminder.ReminderReceiver"
