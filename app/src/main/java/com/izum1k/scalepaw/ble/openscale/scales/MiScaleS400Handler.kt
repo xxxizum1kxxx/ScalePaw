@@ -58,6 +58,8 @@ import com.izum1k.scalepaw.ble.openscale.libs.S400HydrationShift
 import com.izum1k.scalepaw.ble.openscale.libs.S400Decryptor
 import com.izum1k.scalepaw.ble.openscale.libs.S400Inputs
 import com.izum1k.scalepaw.ble.openscale.vocab.GenderType
+import com.izum1k.scalepaw.ble.openscale.vocab.S400FatFormula
+import com.izum1k.scalepaw.ble.openscale.vocab.miCompatibleFat
 import com.izum1k.scalepaw.ble.openscale.ScannedDeviceInfo
 import java.util.Date
 import kotlinx.coroutines.Job
@@ -119,6 +121,7 @@ class MiScaleS400Handler : ScaleDeviceHandler() {
         private const val SETTINGS_KEY_MAC_ADDRESS = "s400_mac_address"
         private const val SETTINGS_KEY_BONE_FORMULA = "s400_bone_formula"
         private const val SETTINGS_KEY_BMR_FORMULA = "s400_bmr_formula"
+        private const val SETTINGS_KEY_FAT_FORMULA = "s400_fat_formula"
 
         // Known S400 device name patterns
         // The S400 may advertise with various names depending on firmware/region
@@ -209,6 +212,16 @@ class MiScaleS400Handler : ScaleDeviceHandler() {
                         Text("${inputValue.length}/32")
                     }
                 }
+            )
+
+            FormulaPicker(
+                titleRes = R.string.s400_fat_formula_label,
+                key = SETTINGS_KEY_FAT_FORMULA,
+                options = listOf(
+                    S400FatFormula.DEURENBERG.name to R.string.s400_fat_formula_deurenberg,
+                    S400FatFormula.MI_COMPATIBLE.name to R.string.s400_fat_formula_mi_compatible,
+                ),
+                defaultValue = S400FatFormula.DEURENBERG.name,
             )
 
             FormulaPicker(
@@ -409,6 +422,17 @@ class MiScaleS400Handler : ScaleDeviceHandler() {
             boneFormula = boneFormula,
             bmrFormula = bmrFormula,
         )
+        val fatOverride = if (readFatFormula() == S400FatFormula.MI_COMPATIBLE && composition.bfPct != null) {
+            miCompatibleFat(
+                sexMale = user.gender == GenderType.MALE,
+                age = user.age,
+                heightCm = user.bodyHeight,
+                weightKg = finalized.weightKg,
+                impedance50k = maxOf(finalized.impedanceLow, finalized.impedanceHigh ?: 0f),
+            )
+        } else {
+            null
+        }
 
         val previous = lastMeasurementFor(user.id)
         val hydrationShift = S400HydrationShift.shiftPct(
@@ -426,11 +450,11 @@ class MiScaleS400Handler : ScaleDeviceHandler() {
             this[MeasurementType.IMPEDANCE_LOW] = Ohm(finalized.impedanceLow)
             finalized.impedanceHigh?.let { this[MeasurementType.IMPEDANCE] = Ohm(it) }
 
-            this[MeasurementType.BODY_FAT] = Percent(composition.bfPct ?: 0f)
-            this[MeasurementType.WATER] = Percent(composition.tbwPct ?: 0f)
+            this[MeasurementType.BODY_FAT] = Percent(fatOverride?.bodyFatPct ?: composition.bfPct ?: 0f)
+            this[MeasurementType.WATER] = Percent(fatOverride?.waterPct ?: composition.tbwPct ?: 0f)
             this[MeasurementType.MUSCLE] = Percent(composition.smmPct ?: 0f)
             this[MeasurementType.BONE] = Kg(composition.boneKg ?: 0f)
-            this[MeasurementType.LBM] = Kg(composition.ffmKg ?: 0f)
+            this[MeasurementType.LBM] = Kg(fatOverride?.lbmKg ?: composition.ffmKg ?: 0f)
             this[MeasurementType.VISCERAL_FAT] = composition.vfi ?: 0f
             this[MeasurementType.BMR] = Kcal(composition.bmrKcal ?: 0f)
             this[MeasurementType.PROTEIN] = Percent(composition.proteinPct ?: 0f)
@@ -451,6 +475,12 @@ class MiScaleS400Handler : ScaleDeviceHandler() {
         when (settingsGetString(SETTINGS_KEY_BONE_FORMULA)) {
             BoneFormula.HEYMSFIELD.name -> BoneFormula.HEYMSFIELD
             else -> BoneFormula.MI_LEGACY
+        }
+
+    private fun readFatFormula(): S400FatFormula =
+        when (settingsGetString(SETTINGS_KEY_FAT_FORMULA)) {
+            S400FatFormula.MI_COMPATIBLE.name -> S400FatFormula.MI_COMPATIBLE
+            else -> S400FatFormula.DEURENBERG
         }
 
     private fun readBmrFormula(): BmrFormula =

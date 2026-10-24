@@ -52,6 +52,9 @@
     <string name="s400_bind_key_error">绑定密钥必须恰好为32个十六进制字符</string>
     <string name="s400_bind_key_label">BLE绑定密钥</string>
     <string name="s400_bmr_formula_label">基础代谢率公式</string>
+    <string name="s400_fat_formula_label">体脂公式</string>
+    <string name="s400_fat_formula_deurenberg">DXA 验证（Deurenberg 1991）</string>
+    <string name="s400_fat_formula_mi_compatible">小米兼容（更接近秤上显示）</string>
     <string name="s400_bone_formula_heymsfield">Heymsfield（人体测量法）</string>
     <string name="s400_bone_formula_label">骨量公式</string>
     <string name="s400_bone_formula_mi_legacy">基于阻抗的回归（旧版）</string>
