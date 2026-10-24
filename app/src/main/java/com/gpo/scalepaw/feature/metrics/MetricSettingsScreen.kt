@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -28,6 +27,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gpo.scalepaw.ui.component.ScaleFab
 import com.gpo.scalepaw.R
 import com.gpo.scalepaw.container
 import com.gpo.scalepaw.data.model.MetricType
@@ -60,11 +60,7 @@ fun MetricSettingsScreen() {
     ScalePage(
         title = stringResource(R.string.settings_metrics),
         floatingAction = {
-            ExtendedFloatingActionButton(
-                onClick = { nav.push(Route.MetricEdit()) },
-                icon = { Icon(YoinSymbols.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.metric_add)) },
-            )
+            ScaleFab(stringResource(R.string.metric_add), YoinSymbols.Add, onClick = { nav.push(Route.MetricEdit()) })
         },
     ) {
         itemsIndexed(types, key = { _, t -> t.id }) { index, type ->

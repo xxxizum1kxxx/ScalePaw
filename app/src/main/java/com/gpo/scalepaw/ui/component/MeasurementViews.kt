@@ -59,7 +59,11 @@ fun EvaluationState.label(): String = stringResource(
  * The visible scale spans the band plus half its width on either side.
  */
 @Composable
-fun EvaluationBar(result: EvaluationResult, modifier: Modifier = Modifier) {
+fun EvaluationBar(
+    result: EvaluationResult,
+    modifier: Modifier = Modifier,
+    background: Color = MaterialTheme.colorScheme.surfaceContainer,
+) {
     val colors = MaterialTheme.colorScheme
     val width = (result.high - result.low).coerceAtLeast(0.1f)
     val min = result.low - width / 2
@@ -77,9 +81,9 @@ fun EvaluationBar(result: EvaluationResult, modifier: Modifier = Modifier) {
         val gap = 3.dp.toPx()
         val third = (size.width - gap * 2) / 4
         val segments = listOf(
-            colors.tertiaryContainer to third,
-            colors.primaryContainer to third * 2,
-            colors.errorContainer to third,
+            colors.tertiary.copy(alpha = 0.55f) to third,
+            colors.primary.copy(alpha = 0.55f) to third * 2,
+            colors.error.copy(alpha = 0.55f) to third,
         )
         var x = 0f
         segments.forEach { (c, w) ->
@@ -87,7 +91,7 @@ fun EvaluationBar(result: EvaluationResult, modifier: Modifier = Modifier) {
             x += w + gap
         }
         val mx = fraction * size.width
-        drawCircle(colors.surface, size.height / 2, Offset(mx, size.height / 2))
+        drawCircle(background, size.height / 2, Offset(mx, size.height / 2))
         drawCircle(marker, size.height / 2 - 2.dp.toPx(), Offset(mx, size.height / 2))
     }
 }

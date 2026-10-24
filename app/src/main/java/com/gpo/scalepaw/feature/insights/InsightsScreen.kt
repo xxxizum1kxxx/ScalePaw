@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -282,15 +283,15 @@ private fun Bar(fraction: Float, label: String, highlight: Boolean, modifier: Mo
     val f by animateFloatAsState(fraction, YoinMotion.defaultSpatialSpec(), label = "bar")
     val color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
     Column(modifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.weight(1f).fillMaxWidth()) {
+        Box(Modifier.weight(1f).fillMaxWidth(if (centered) 0.5f else 1f)) {
             if (centered) {
                 val h = abs(f).coerceIn(0.04f, 1f) / 2
                 Column(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(0.5f).fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
-                        if (f >= 0f) Box(Modifier.fillMaxWidth().fillMaxHeight(h * 2).clip(YoinContainerShapes.ListRow).background(color))
+                        if (f >= 0f) Box(Modifier.fillMaxWidth().fillMaxHeight(h * 2).clip(CircleShape).background(color))
                     }
                     Box(Modifier.weight(0.5f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                        if (f < 0f) Box(Modifier.fillMaxWidth().fillMaxHeight(h * 2).clip(YoinContainerShapes.ListRow).background(color))
+                        if (f < 0f) Box(Modifier.fillMaxWidth().fillMaxHeight(h * 2).clip(CircleShape).background(color))
                     }
                 }
             } else {

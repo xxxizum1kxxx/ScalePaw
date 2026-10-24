@@ -21,7 +21,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.util.concurrent.TimeUnit
 
-data class Tile(val type: MetricType, val value: MetricValue, val delta: Float?, val evaluation: EvaluationResult?)
+/** The newest value of [type], taken from [source], which may be older than the latest entry. */
+data class Tile(val type: MetricType, val value: MetricValue, val source: Measurement, val delta: Float?, val evaluation: EvaluationResult?)
 
 data class GoalProgress(val goal: UserGoal, val start: Float, val remaining: Float, val fraction: Float)
 
@@ -54,18 +55,16 @@ class OverviewViewModel(session: Session) : ViewModel() {
         val delta = if (latest != null && weight != null) Analytics.previousDifference(s.measurements, weight, latest) else null
         val since = (latest?.timestamp ?: 0L) - TimeUnit.DAYS.toMillis(RECENT_DAYS)
         val series = weight?.let { t -> Analytics.series(s.measurements.filter { it.timestamp >= since }, t) }.orEmpty()
-        val tiles = if (latest == null) {
-            emptyList()
-        } else {
-            s.numericTypes.filter { it.id != weight?.id }.mapNotNull { t ->
-                val v = latest.values[t.id]?.takeUnless { it.isEmpty } ?: return@mapNotNull null
-                Tile(
-                    type = t,
-                    value = v,
-                    delta = Analytics.previousDifference(s.measurements, t, latest),
-                    evaluation = v.number?.let { Evaluation.evaluate(t, it, user, latest.timestamp) },
-                )
-            }
+        val tiles = s.numericTypes.filter { it.id != weight?.id }.mapNotNull { t ->
+            val source = s.measurements.firstOrNull { m -> m.values[t.id]?.isEmpty == false } ?: return@mapNotNull null
+            val v = source.values.getValue(t.id)
+            Tile(
+                type = t,
+                value = v,
+                source = source,
+                delta = Analytics.previousDifference(s.measurements, t, source),
+                evaluation = v.number?.let { Evaluation.evaluate(t, it, user, source.timestamp) },
+            )
         }
         return OverviewUiState(
             loaded = true,

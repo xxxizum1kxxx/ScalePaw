@@ -60,9 +60,9 @@ fun ComparisonScreen(start: Long, end: Long) {
             }
         }
         val rows = state.numericTypes.mapNotNull { t ->
-            val a = from.number(t)
-            val b = to.number(t)
-            if (a == null || b == null) null else Triple(t, a, b)
+            val first = inside.lastOrNull { it.number(t) != null } ?: return@mapNotNull null
+            val last = inside.firstOrNull { it.number(t) != null } ?: return@mapNotNull null
+            if (first.id == last.id) null else Triple(t, first.number(t)!!, last.number(t)!!)
         }
         items(rows, key = { it.first.id }) { (type, a, b) ->
             Row(

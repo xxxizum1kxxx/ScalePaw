@@ -36,6 +36,7 @@ object Fmt {
 
     fun signed(value: Float, type: MetricType): String {
         val body = number(abs(value), decimals(type))
+        if (body.none { it in '1'..'9' }) return body
         return when {
             value > 0f -> "+$body"
             value < 0f -> "−$body"

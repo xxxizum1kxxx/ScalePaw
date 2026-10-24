@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -47,6 +46,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.gpo.scalepaw.ui.component.ScaleFab
 import com.gpo.scalepaw.R
 import com.gpo.scalepaw.ble.ScaleStatus
 import com.gpo.scalepaw.container
@@ -114,10 +114,10 @@ private fun Tabs() {
             }
         }
         Column(Modifier.align(Alignment.BottomCenter), horizontalAlignment = Alignment.End) {
-            ExtendedFloatingActionButton(
+            ScaleFab(
+                text = stringResource(R.string.action_add_measurement),
+                icon = YoinSymbols.Add,
                 onClick = { nav.push(Route.MeasurementEdit()) },
-                icon = { Icon(YoinSymbols.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.action_add_measurement)) },
                 modifier = Modifier
                     .readingWidth(1200.dp)
                     .wrapContentWidth(Alignment.End)

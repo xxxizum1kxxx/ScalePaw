@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -32,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.gpo.scalepaw.ui.component.ScaleFab
 import com.gpo.scalepaw.R
 import com.gpo.scalepaw.container
 import com.gpo.scalepaw.data.model.InputType
@@ -105,17 +105,17 @@ fun MetricEditScreen(id: Long) {
             }
         },
         floatingAction = {
-            ExtendedFloatingActionButton(
+            ScaleFab(
+                text = stringResource(R.string.action_save),
+                icon = YoinSymbols.Check,
                 onClick = {
-                    if (!canSave) return@ExtendedFloatingActionButton
+                    if (!canSave) return@ScaleFab
                     scope.launch {
                         val t = draft.copy(customName = if (nameEditable) name.trim() else draft.customName)
                         if (isNew) repository.addCustomType(t) else repository.updateType(t)
                         done = true
                     }
                 },
-                icon = { Icon(YoinSymbols.Check, contentDescription = null) },
-                text = { Text(stringResource(R.string.action_save)) },
                 containerColor = if (canSave) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
             )
         },

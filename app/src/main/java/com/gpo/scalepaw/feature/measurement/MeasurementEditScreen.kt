@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -28,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gpo.scalepaw.ui.component.ScaleFab
 import com.gpo.scalepaw.R
 import com.gpo.scalepaw.data.model.InputType
 import com.gpo.scalepaw.data.model.UnitType
@@ -79,10 +79,10 @@ fun MeasurementEditScreen(id: Long) {
         },
         floatingAction = {
             if (state.loaded) {
-                ExtendedFloatingActionButton(
+                ScaleFab(
+                    text = stringResource(R.string.action_save),
+                    icon = YoinSymbols.Check,
                     onClick = { if (state.canSave) vm.save() },
-                    icon = { Icon(YoinSymbols.Check, contentDescription = null) },
-                    text = { Text(stringResource(R.string.action_save)) },
                     containerColor = if (state.canSave) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
                 )
             }

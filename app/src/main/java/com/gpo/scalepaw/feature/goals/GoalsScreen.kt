@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -33,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gpo.scalepaw.ui.component.ScaleFab
 import com.gpo.scalepaw.R
 import com.gpo.scalepaw.container
 import com.gpo.scalepaw.data.model.MetricType
@@ -66,11 +66,7 @@ fun GoalsScreen() {
         title = stringResource(R.string.settings_goals),
         floatingAction = {
             if (user != null) {
-                ExtendedFloatingActionButton(
-                    onClick = { adding = true },
-                    icon = { Icon(YoinSymbols.Add, contentDescription = null) },
-                    text = { Text(stringResource(R.string.goal_add)) },
-                )
+                ScaleFab(stringResource(R.string.goal_add), YoinSymbols.Add, onClick = { adding = true })
             }
         },
     ) {

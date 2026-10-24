@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -38,7 +39,7 @@ fun ScalePage(
         modifier = modifier.nestedScroll(scroll.nestedScrollConnection),
         topBar = { ScaleLargeTopBar(title, scroll, actions = actions) },
         snackbarHost = { SnackbarHost(snackbar) },
-        floatingActionButton = floatingAction,
+        floatingActionButton = { Box(Modifier.imePadding()) { floatingAction() } },
         containerColor = MaterialTheme.colorScheme.surface,
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()), contentAlignment = Alignment.TopCenter) {

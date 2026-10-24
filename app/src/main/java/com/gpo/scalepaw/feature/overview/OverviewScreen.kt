@@ -81,7 +81,7 @@ fun OverviewScreen() {
                         item(span = { GridItemSpan(maxLineSpan) }) { GoalCard(goal, state) }
                     }
                     items(state.tiles, key = { it.type.id }) { tile ->
-                        MetricTile(tile, onClick = { state.latest?.let { nav.push(Route.MeasurementDetail(it.id)) } })
+                        MetricTile(tile, stale = tile.source.id != state.latest?.id, onClick = { nav.push(Route.MeasurementDetail(tile.source.id)) })
                     }
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Text(
@@ -153,7 +153,7 @@ private fun Hero(state: OverviewUiState) {
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Spacer(Modifier.height(6.dp))
-            EvaluationBar(eval)
+            EvaluationBar(eval, background = MaterialTheme.colorScheme.primaryContainer)
         }
         if (state.recentSeries.size > 1) {
             Spacer(Modifier.height(16.dp))
@@ -212,8 +212,9 @@ private fun GoalCard(goal: GoalProgress, state: OverviewUiState) {
 }
 
 @Composable
-private fun MetricTile(tile: Tile, onClick: () -> Unit) {
+private fun MetricTile(tile: Tile, stale: Boolean, onClick: () -> Unit) {
     val type = tile.type
+    val context = LocalContext.current
     Column(
         Modifier
             .fillMaxWidth()
@@ -259,6 +260,15 @@ private fun MetricTile(tile: Tile, onClick: () -> Unit) {
                 )
             }
         }
-        tile.delta?.takeIf { it != 0f }?.let { DeltaText(it, type) }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            tile.delta?.takeIf { it != 0f }?.let { DeltaText(it, type) }
+            if (stale) {
+                Text(
+                    Fmt.shortDate(context, tile.source.timestamp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }

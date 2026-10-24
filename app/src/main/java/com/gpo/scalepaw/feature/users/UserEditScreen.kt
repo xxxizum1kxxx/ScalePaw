@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -26,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gpo.scalepaw.ui.component.ScaleFab
 import com.gpo.scalepaw.R
 import com.gpo.scalepaw.data.model.ActivityLevel
 import com.gpo.scalepaw.data.model.AmputationPart
@@ -77,10 +77,10 @@ fun UserEditScreen(id: Long) {
         },
         floatingAction = {
             if (s.loaded) {
-                ExtendedFloatingActionButton(
+                ScaleFab(
+                    text = stringResource(R.string.action_save),
+                    icon = YoinSymbols.Check,
                     onClick = vm::save,
-                    icon = { Icon(YoinSymbols.Check, contentDescription = null) },
-                    text = { Text(stringResource(R.string.action_save)) },
                     containerColor = if (s.canSave) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
                 )
             }

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gpo.scalepaw.ui.component.ScaleFab
 import com.gpo.scalepaw.R
 import com.gpo.scalepaw.container
 import com.gpo.scalepaw.ui.component.Fmt
@@ -42,11 +42,7 @@ fun UserSettingsScreen() {
     ScalePage(
         title = stringResource(R.string.settings_users),
         floatingAction = {
-            ExtendedFloatingActionButton(
-                onClick = { nav.push(Route.UserEdit()) },
-                icon = { Icon(PiliSymbols.PersonAdd, contentDescription = null) },
-                text = { Text(stringResource(R.string.user_add)) },
-            )
+            ScaleFab(stringResource(R.string.user_add), PiliSymbols.PersonAdd, onClick = { nav.push(Route.UserEdit()) })
         },
     ) {
         items(state.users, key = { it.id }) { user ->

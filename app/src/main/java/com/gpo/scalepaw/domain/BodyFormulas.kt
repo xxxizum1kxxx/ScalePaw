@@ -7,6 +7,7 @@ import com.gpo.scalepaw.data.model.BodyWaterFormula
 import com.gpo.scalepaw.data.model.Gender
 import com.gpo.scalepaw.data.model.LbmFormula
 import kotlin.math.log10
+import kotlin.math.round
 
 /**
  * Body metrics derived from other values. Inputs are in kg / cm / years; every function
@@ -140,6 +141,5 @@ object BodyFormulas {
         return if (correction > 0f && remaining > 0f) measuredKg * 100f / remaining else measuredKg
     }
 
-    /** Truncates to two decimals, as openScale stores derived values. */
-    fun round2(value: Float): Float = (value * 100).toInt() / 100f
+    fun round2(value: Float): Float = round(value * 100f) / 100f
 }

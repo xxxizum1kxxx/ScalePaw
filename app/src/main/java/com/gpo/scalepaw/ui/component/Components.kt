@@ -1,5 +1,8 @@
 package com.gpo.scalepaw.ui.component
 
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -387,3 +390,21 @@ fun Reveal(visible: Boolean, content: @Composable () -> Unit) {
 fun Modifier.bottomSafe(): Modifier = this.navigationBarsPadding()
 
 val PillShape = RoundedCornerShape(50)
+
+/** Extended FAB whose label is also its accessibility name. */
+@Composable
+fun ScaleFab(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
+) {
+    ExtendedFloatingActionButton(
+        onClick = onClick,
+        icon = { Icon(icon, contentDescription = null) },
+        text = { Text(text) },
+        containerColor = containerColor,
+        modifier = modifier.semantics { contentDescription = text },
+    )
+}
