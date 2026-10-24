@@ -24,6 +24,8 @@
  */
 package com.izum1k.scalepaw.ble.openscale.scales
 
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import android.bluetooth.le.ScanResult
 import android.os.ParcelUuid
 import androidx.compose.foundation.layout.Arrangement
@@ -212,6 +214,7 @@ class XiaomiS800Handler : ScaleDeviceHandler() {
                 colors = scaleTextFieldColors(),
                 leadingIcon = { Icon(PiliSymbols.Lock, contentDescription = null) },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
                 isError = showError,
                 supportingText = {
                     Row(

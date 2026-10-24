@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextField
@@ -38,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.izum1k.scalepaw.ui.component.scaleTextFieldColors
 import com.izum1k.scalepaw.ui.theme.YoinContainerShapes
@@ -58,6 +60,9 @@ import com.izum1k.scalepaw.ble.openscale.libs.S400Inputs
 import com.izum1k.scalepaw.ble.openscale.vocab.GenderType
 import com.izum1k.scalepaw.ble.openscale.ScannedDeviceInfo
 import java.util.Date
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.text.isNotEmpty
 import kotlin.text.lowercase
@@ -133,6 +138,7 @@ class MiScaleS400Handler : ScaleDeviceHandler() {
 
     // Holds per-device session state until both impedance packets land.
     private val aggregator = S400Aggregator()
+    private var flushJob: Job? = null
 
 
     @Composable
@@ -183,6 +189,7 @@ class MiScaleS400Handler : ScaleDeviceHandler() {
                 colors = scaleTextFieldColors(),
                 leadingIcon = { Icon(PiliSymbols.Lock, contentDescription = null) },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
                 isError = showError,
                 supportingText = {
                     Row(
@@ -351,11 +358,32 @@ class MiScaleS400Handler : ScaleDeviceHandler() {
         )
 
         val finalized = when (val outcome = aggregator.ingest(deviceMac, measurement, System.currentTimeMillis())) {
-            is S400Aggregator.Outcome.Pending -> return BroadcastAction.CONSUMED_KEEP_SCANNING
+            is S400Aggregator.Outcome.Pending -> {
+                scheduleFlush(deviceMac, user)
+                return BroadcastAction.CONSUMED_KEEP_SCANNING
+            }
             is S400Aggregator.Outcome.Duplicate -> return BroadcastAction.CONSUMED_KEEP_SCANNING
             is S400Aggregator.Outcome.Finalized -> outcome
         }
+        flushJob?.cancel()
+        publishFinalized(finalized, user)
+        return BroadcastAction.CONSUMED_STOP
+    }
 
+    /** Some firmware sends Packet A once and goes quiet; publish it once the session times out. */
+    private fun scheduleFlush(deviceMac: String, user: ScaleUser) {
+        flushJob?.cancel()
+        flushJob = scope.launch {
+            delay(S400Aggregator.DEFAULT_SESSION_TIMEOUT_MS)
+            val outcome = aggregator.flush(deviceMac, System.currentTimeMillis())
+            if (outcome is S400Aggregator.Outcome.Finalized) {
+                publishFinalized(outcome, user)
+                requestDisconnect()
+            }
+        }
+    }
+
+    private fun publishFinalized(finalized: S400Aggregator.Outcome.Finalized, user: ScaleUser) {
         logI(
             "S400 finalized: weight=${finalized.weightKg}kg, " +
                 "impedanceHigh=${finalized.impedanceHigh}, " +
@@ -417,8 +445,6 @@ class MiScaleS400Handler : ScaleDeviceHandler() {
         }
 
         publish(scaleMeasurement)
-
-        return BroadcastAction.CONSUMED_STOP
     }
 
     private fun readBoneFormula(): BoneFormula =

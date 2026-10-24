@@ -17,6 +17,8 @@
  */
 package com.izum1k.scalepaw.ble.openscale.scales
 
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import android.util.SparseArray
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -190,6 +192,7 @@ class HuaweiHagridWspHandler(
             colors = scaleTextFieldColors(),
             leadingIcon = { Icon(PiliSymbols.Lock, contentDescription = null) },
             singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
             isError = showError,
             visualTransformation = PasswordVisualTransformation(),
             supportingText = {

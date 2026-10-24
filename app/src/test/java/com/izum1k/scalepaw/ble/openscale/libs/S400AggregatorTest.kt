@@ -120,4 +120,24 @@ class S400AggregatorTest {
         val done = agg.ingest(mac, packetB(), nowMs = 1_200)
         assertThat(done).isInstanceOf(S400Aggregator.Outcome.Finalized::class.java)
     }
+
+    @Test
+    fun should_finalize_packet_a_when_flushed_without_a_second_packet() {
+        val agg = S400Aggregator()
+        agg.ingest(mac, packetA(), nowMs = 1_000)
+
+        val flushed = agg.flush(mac, nowMs = 11_000) as S400Aggregator.Outcome.Finalized
+        assertThat(flushed.weightKg).isWithin(0.01f).of(69.9f)
+        assertThat(flushed.impedanceHigh).isNull()
+        assertThat(flushed.timedOut).isTrue()
+        assertThat(agg.flush(mac, nowMs = 12_000)).isInstanceOf(S400Aggregator.Outcome.Pending::class.java)
+    }
+
+    @Test
+    fun should_stay_pending_when_flushed_without_packet_a() {
+        val agg = S400Aggregator()
+        agg.ingest(mac, packetB(), nowMs = 1_000)
+
+        assertThat(agg.flush(mac, nowMs = 11_000)).isInstanceOf(S400Aggregator.Outcome.Pending::class.java)
+    }
 }

@@ -11,14 +11,16 @@ import com.izum1k.scalepaw.R
 import com.izum1k.scalepaw.ble.openscale.scales.BleBroadcastTuning
 import com.izum1k.scalepaw.ble.openscale.scales.BroadcastAction
 import com.izum1k.scalepaw.ble.openscale.scales.ScaleDeviceHandler
+import com.izum1k.scalepaw.ble.openscale.util.LogManager
 import java.util.UUID
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * A scale that only advertises its readings. Scans for the one address, drops repeated and
- * too-frequent packets, and hands the rest to the driver until it reports a final reading.
+ * A scale that only advertises its readings. Scans for the one address, drops repeated packets,
+ * throttles the rest to one per stabilize window and hands them to the driver until it reports a
+ * final reading.
  */
 @SuppressLint("MissingPermission")
 class BroadcastLink(link: LinkContext, private val tuning: BleBroadcastTuning) : ScaleLink(link) {
@@ -28,6 +30,8 @@ class BroadcastLink(link: LinkContext, private val tuning: BleBroadcastTuning) :
     private var attempt = 0
     private var scanning = false
     private var timeout: Job? = null
+    private var deferred: ScanResult? = null
+    private var deferJob: Job? = null
     private var address = ""
 
     private val callback = object : ScanCallback() {
@@ -62,10 +66,13 @@ class BroadcastLink(link: LinkContext, private val tuning: BleBroadcastTuning) :
         val settings = ScanSettings.Builder().setScanMode(tuning.scanMode).build()
         runCatching { scanner.startScan(listOf(filter), settings, callback) }
             .onFailure { return finish(it.message ?: context.getString(R.string.ble_error_unavailable)) }
+        LogManager.d(tag, "Broadcast scan attempt ${attempt + 1} for $address")
         timeout?.cancel()
         timeout = scope.launch {
             delay(tuning.maxScanMs)
             if (!scanning) return@launch
+            // stopScan() cancels [timeout]; this job must survive it to retry or give up.
+            timeout = null
             stopScan()
             attempt++
             if (attempt <= tuning.common.maxRetries) {
@@ -87,11 +94,29 @@ class BroadcastLink(link: LinkContext, private val tuning: BleBroadcastTuning) :
         if (last != null && now - last <= tuning.packetDedupWindowMs) return
         seen[hash] = now
         seen.entries.removeAll { now - it.value > tuning.packetDedupWindowMs }
-        if (now - lastForward < tuning.stabilizeWindowMs) return
+        val wait = tuning.stabilizeWindowMs - (now - lastForward)
+        if (wait > 0) {
+            // Multi-packet scales (S400) send their second packet inside the window; hold the
+            // newest one for its end instead of dropping it.
+            deferred = result
+            if (deferJob == null) {
+                deferJob = scope.launch {
+                    delay(wait)
+                    deferJob = null
+                    val held = deferred ?: return@launch
+                    deferred = null
+                    if (scanning) forward(held)
+                }
+            }
+            return
+        }
+        forward(result)
+    }
 
+    private fun forward(result: ScanResult) {
         when (handler.onAdvertisement(result, link.user)) {
             BroadcastAction.IGNORED -> Unit
-            BroadcastAction.CONSUMED_KEEP_SCANNING -> lastForward = now
+            BroadcastAction.CONSUMED_KEEP_SCANNING -> lastForward = SystemClock.elapsedRealtime()
             BroadcastAction.CONSUMED_STOP -> finish(null)
         }
     }
@@ -99,6 +124,9 @@ class BroadcastLink(link: LinkContext, private val tuning: BleBroadcastTuning) :
     private fun stopScan() {
         timeout?.cancel()
         timeout = null
+        deferJob?.cancel()
+        deferJob = null
+        deferred = null
         if (scanning) runCatching { adapter?.bluetoothLeScanner?.stopScan(callback) }
         scanning = false
     }

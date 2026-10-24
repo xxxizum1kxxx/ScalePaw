@@ -91,6 +91,24 @@ class S400Aggregator(
             return Outcome.Pending
         }
 
+        return finalize(deviceMac, session, timedOut, nowMs)
+    }
+
+    /**
+     * Finalizes a session holding Packet A without waiting for another packet. Firmware that
+     * emits Packet A once and then falls silent never triggers the timeout inside [ingest].
+     */
+    fun flush(deviceMac: String, nowMs: Long): Outcome {
+        val session = sessions[deviceMac] ?: return Outcome.Pending
+        if (session.weightKg == null || session.impedanceLow == null) return Outcome.Pending
+        return finalize(deviceMac, session, timedOut = session.impedanceHigh == null, nowMs = nowMs)
+    }
+
+    private fun finalize(deviceMac: String, session: Session, timedOut: Boolean, nowMs: Long): Outcome {
+        val weight = session.weightKg ?: return Outcome.Pending
+        val impLow = session.impedanceLow ?: return Outcome.Pending
+        val impHigh = session.impedanceHigh
+
         recent[deviceMac]?.let { previous ->
             val weightClose = abs(previous.weight - weight) < dedupWeightToleranceKg
             val impClose = abs(previous.impedanceLow - impLow) < dedupImpedanceToleranceOhm
