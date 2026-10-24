@@ -1,8 +1,8 @@
 # kotlinx.serialization: keep generated serializers for @Serializable classes.
 -keepattributes *Annotation*, InnerClasses
--keepclassmembers class com.gpo.scalepaw.** {
+-keepclassmembers class com.izum1k.scalepaw.** {
     *** Companion;
 }
--keepclasseswithmembers class com.gpo.scalepaw.** {
+-keepclasseswithmembers class com.izum1k.scalepaw.** {
     kotlinx.serialization.KSerializer serializer(...);
 }

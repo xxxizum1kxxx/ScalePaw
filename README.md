@@ -27,7 +27,7 @@ Requires the Android SDK (compileSdk 36). minSdk is 31.
 
 ## Layout
 
-- `app/src/main/java/com/gpo/scalepaw/data`: Room entities and DAOs, the repository, DataStore settings, CSV/backup transfer
+- `app/src/main/java/com/izum1k/scalepaw/data`: Room entities and DAOs, the repository, DataStore settings, CSV/backup transfer
 - `domain`: body formulas, derived metrics, evaluation tables, aggregation, smoothing and insights
 - `ble`: scanning, GATT/broadcast/SPP transports and `ScaleManager`, which turns a driver's reading into a measurement
 - `ble/openscale`: the openScale scale drivers (`scales`), their helper libraries (`libs`) and a thin compatibility layer (`vocab`, `util`)
@@ -38,7 +38,7 @@ Requires the Android SDK (compileSdk 36). minSdk is 31.
 
 ## Credits
 
-- [openScale](https://github.com/oliexdev/openScale) by olie.xdev and contributors (GPL-3.0-or-later): the feature set, CSV format, and the Bluetooth scale drivers under `app/src/main/java/com/gpo/scalepaw/ble/openscale/{scales,libs}`, ported with package and UI changes only. Their test vectors live under `app/src/test/java/com/gpo/scalepaw/ble/openscale`. Driver strings in `res/values*/strings_drivers.xml` come from openScale too.
+- [openScale](https://github.com/oliexdev/openScale) by olie.xdev and contributors (GPL-3.0-or-later): the feature set, CSV format, and the Bluetooth scale drivers under `app/src/main/java/com/izum1k/scalepaw/ble/openscale/{scales,libs}`, ported with package and UI changes only. Their test vectors live under `app/src/test/java/com/izum1k/scalepaw/ble/openscale`. Driver strings in `res/values*/strings_drivers.xml` come from openScale too.
 - [Yoin](https://github.com/p2o51/Yoin) by Chen Wuyi (Apache-2.0): the theme (`ui/theme`: colour scheme factory, animated colour scheme, motion, shapes, continuous corners, typography) and the design language. See [NOTICE](NOTICE).
 - [PiliPaw](https://github.com/p2o51/PiliPaw) by Chen Wuyi (GPL-3.0): system bars, wallpaper seeds, adaptive helpers, formatting helpers, the floating navigation bar, and `PiliSymbols`.
 - [material-color-utilities](https://github.com/material-foundation/material-color-utilities) by Google (Apache-2.0): the colour code under `app/src/main/java/{contrast,dislike,dynamiccolor,hct,palettes,scheme,temperature,utils}`.

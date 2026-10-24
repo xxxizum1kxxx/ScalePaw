@@ -33,7 +33,7 @@ ScalePaw is an Android Compose rewrite of openScale: a body-weight and body-comp
 - `ble/openscale/{scales,libs}` are ported from openScale and keep their GPL headers. Change them as little as possible so upstream fixes can be merged: package names, the UI toolkit (Yoin components instead of raw Material), and nothing else unless it is a bug.
 - `ble/openscale/{vocab,util}` replace the openScale and blessed types the drivers use. Extend them rather than editing a driver.
 - `ScaleFactory` order matters: the first handler that claims a device wins.
-- Every driver change needs its openScale test vector under `app/src/test/java/com/gpo/scalepaw/ble/openscale` to keep passing.
+- Every driver change needs its openScale test vector under `app/src/test/java/com/izum1k/scalepaw/ble/openscale` to keep passing.
 
 ## UI rules
 

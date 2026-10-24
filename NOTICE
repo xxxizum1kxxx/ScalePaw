@@ -3,19 +3,19 @@ Licensed under the GNU General Public License, version 3 or later.
 
 This product includes software developed by third parties:
 
-- openScale (app/src/main/java/com/gpo/scalepaw/ble/openscale,
+- openScale (app/src/main/java/com/izum1k/scalepaw/ble/openscale,
   app/src/main/res/values*/strings_drivers.xml)
   Copyright olie.xdev and the openScale contributors
   Licensed under the GNU General Public License, version 3 or later.
   https://github.com/oliexdev/openScale
 
-- Yoin (app/src/main/java/com/gpo/scalepaw/ui/theme)
+- Yoin (app/src/main/java/com/izum1k/scalepaw/ui/theme)
   Copyright 2026 Chen Wuyi
   Licensed under the Apache License, Version 2.0.
   https://github.com/p2o51/Yoin
   Adapted for ScalePaw.
 
-- PiliPaw (parts of app/src/main/java/com/gpo/scalepaw/ui,
+- PiliPaw (parts of app/src/main/java/com/izum1k/scalepaw/ui,
   yoin-symbols/src/main/kotlin/com/gpo/yoin/symbols/PiliSymbols.kt)
   Copyright Chen Wuyi
   Licensed under the GNU General Public License, version 3.

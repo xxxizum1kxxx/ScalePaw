@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.gpo.scalepaw"
+    namespace = "com.izum1k.scalepaw"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.gpo.scalepaw"
+        applicationId = "com.izum1k.scalepaw"
         minSdk = 31
         targetSdk = 36
         versionCode = 1
