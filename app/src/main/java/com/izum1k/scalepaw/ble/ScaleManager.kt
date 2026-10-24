@@ -129,6 +129,10 @@ class ScaleManager(
 ) {
     val scanner = ScaleScanner(context, scope)
     private val drivers = DriverStore(context)
+    private val _driverRevision = MutableStateFlow(0)
+
+    /** Bumps when driver settings change outside the driver's own UI, so that UI can re-read them. */
+    val driverRevision: StateFlow<Int> = _driverRevision.asStateFlow()
 
     private val _status = MutableStateFlow<ScaleStatus>(ScaleStatus.Idle)
     val status: StateFlow<ScaleStatus> = _status.asStateFlow()
@@ -239,6 +243,17 @@ class ScaleManager(
     /** A driver instance for showing its configuration UI; its settings are live, its link is not. */
     fun configurationHandler(s: SavedScale): ScaleDeviceHandler? =
         ScaleFactory.resolve(savedDevice(s))?.first?.also { it.attachSettings(drivers.forHandler(s.address, it)) }
+
+    /** Stores a Xiaomi cloud bind key for the saved scale at [address]; false when its driver takes none. */
+    suspend fun applyBindKey(address: String, key: String): Boolean {
+        val saved = settings.current().scale.devices.firstOrNull { it.address == address } ?: return false
+        val handler = ScaleFactory.resolve(savedDevice(saved))?.first ?: return false
+        val setting = MiCloudKeys.settingKey(handler) ?: return false
+        if (!MiCloudKeys.isValid(key)) return false
+        drivers.forHandler(address, handler).putString(setting, key.lowercase())
+        _driverRevision.update { it + 1 }
+        return true
+    }
 
     // ── Presence ───────────────────────────────────────────────────────────
 

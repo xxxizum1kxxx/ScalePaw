@@ -21,6 +21,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import android.text.format.DateFormat
 import com.izum1k.scalepaw.R
 import com.izum1k.scalepaw.ui.theme.YoinContainerShapes
@@ -42,6 +44,7 @@ fun ScaleTextField(
     isError: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
     singleLine: Boolean = true,
+    password: Boolean = false,
 ) {
     TextField(
         value = value,
@@ -51,7 +54,12 @@ fun ScaleTextField(
         suffix = suffix?.takeIf { it.isNotEmpty() }?.let { { Text(it) } },
         isError = isError,
         singleLine = singleLine,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = if (singleLine) ImeAction.Next else ImeAction.Default),
+        visualTransformation = if (password) PasswordVisualTransformation() else VisualTransformation.None,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = if (password) KeyboardType.Password else keyboardType,
+            imeAction = if (singleLine) ImeAction.Next else ImeAction.Default,
+            autoCorrectEnabled = !password,
+        ),
         shape = YoinContainerShapes.ListRow,
         colors = scaleTextFieldColors(),
         modifier = modifier.fillMaxWidth(),

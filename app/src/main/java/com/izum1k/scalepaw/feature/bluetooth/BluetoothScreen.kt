@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -48,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gpo.yoin.symbols.YoinSymbols
 import com.izum1k.scalepaw.R
 import com.izum1k.scalepaw.ble.DiscoveredScale
+import com.izum1k.scalepaw.ble.MiCloudKeys
 import com.izum1k.scalepaw.ble.openscale.scales.DeviceSupport
 import com.izum1k.scalepaw.ble.openscale.scales.LinkMode
 import com.izum1k.scalepaw.ble.openscale.scales.TuningProfile
@@ -77,6 +79,8 @@ fun BluetoothScreen() {
     val state by context.container.session.state.collectAsStateWithLifecycle()
     val devices by scales.scanner.devices.collectAsStateWithLifecycle()
     val scanning by scales.scanner.scanning.collectAsStateWithLifecycle()
+    val driverRevision by scales.driverRevision.collectAsStateWithLifecycle()
+    val nav = LocalNavigator.current
     val settings = state.settings.scale
     val active = settings.active
     val savedAddresses = remember(settings.devices) { settings.devices.map { it.address }.toSet() }
@@ -111,7 +115,22 @@ fun BluetoothScreen() {
             if (configHandler != null) {
                 item {
                     Section(title = stringResource(R.string.ble_driver_settings)) {
-                        Box(Modifier.padding(16.dp)) { configHandler.DeviceConfigurationUi() }
+                        if (active != null && MiCloudKeys.settingKey(configHandler) != null) {
+                            SettingRow(
+                                title = stringResource(R.string.micloud_entry),
+                                value = stringResource(R.string.micloud_entry_summary),
+                                icon = YoinSymbols.Cloud,
+                                onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
+                                    nav.push(Route.MiCloudKey(active.address))
+                                },
+                            ) {
+                                Icon(YoinSymbols.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        key(driverRevision) {
+                            Box(Modifier.padding(16.dp)) { configHandler.DeviceConfigurationUi() }
+                        }
                     }
                 }
             }
